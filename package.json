@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/atkinson-hyperlegible": "^5.2.6",
     "@zeller-public/payments-sdk-react": "0.2.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

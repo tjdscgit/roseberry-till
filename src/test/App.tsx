@@ -19,6 +19,8 @@ const CHARGE_CENTS = 100;
 const PURCHASE_WATCHDOG_MS = 3 * 60 * 1000;
 // A lookup that finds nothing is only trusted once it has been repeated after this delay.
 const RECHECK_DELAY_MS = 30 * 1000;
+// How often to retry recovery automatically while any record is still unknown or pending.
+const AUTO_RECHECK_INTERVAL_MS = 60 * 1000;
 
 type Pairing = "checking" | "paired" | "setup_required" | "error";
 
@@ -214,6 +216,38 @@ export default function App() {
       await recover();
     })();
   }, [checkStatus, recover]);
+
+  // Re-check unknown/pending records without anyone tapping a button: when the internet comes back,
+  // when the page is shown again (unlock, app switch), and every minute while any remain open.
+  // Skipped while an SDK call or a purchase is in flight, so it never races the live payment.
+  const autoRecovering = useRef(false);
+  const autoRecover = useCallback(
+    async (why: string) => {
+      if (autoRecovering.current || busyRef.current || purchaseRef.current) return;
+      if (!loadTx().some((t) => t.status === "pending" || t.status === "unknown")) return;
+      autoRecovering.current = true;
+      addLog("info", "auto-recover", why);
+      try {
+        await recover();
+      } finally {
+        autoRecovering.current = false;
+      }
+    },
+    [addLog, recover]
+  );
+
+  useEffect(() => {
+    const onOnline = () => autoRecover("internet back");
+    const onVisible = () => document.visibilityState === "visible" && autoRecover("page shown again");
+    const timer = setInterval(() => autoRecover("periodic check"), AUTO_RECHECK_INTERVAL_MS);
+    window.addEventListener("online", onOnline);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      document.removeEventListener("visibilitychange", onVisible);
+      clearInterval(timer);
+    };
+  }, [autoRecover]);
 
   const pair = async () => {
     await run("setup", null, () => terminal.setup());
