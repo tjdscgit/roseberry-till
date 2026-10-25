@@ -1,0 +1,860 @@
+[
+  {
+    "id": "beans",
+    "sku": "542896",
+    "name": "Beans",
+    "category": "Legume",
+    "gst": "free",
+    "options": [
+      {
+        "id": "punnet",
+        "label": "Punnet",
+        "unit": "each",
+        "price": 500
+      },
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 5000
+      }
+    ]
+  },
+  {
+    "id": "beetroot",
+    "sku": "546015",
+    "name": "Beetroot",
+    "category": "Roots",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bunch",
+        "label": "Bunch",
+        "unit": "each",
+        "price": 500
+      },
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 1000
+      }
+    ]
+  },
+  {
+    "id": "bok-choi",
+    "sku": "989415",
+    "name": "Bok Choi",
+    "category": "Cooking Greens",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bunch",
+        "label": "Bunch",
+        "unit": "each",
+        "price": 400
+      },
+      {
+        "id": "single",
+        "label": "Single",
+        "unit": "each",
+        "price": 250
+      }
+    ]
+  },
+  {
+    "id": "broccoli",
+    "sku": "939020",
+    "name": "Broccoli",
+    "category": "Brassica",
+    "gst": "free",
+    "options": [
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 1500
+      }
+    ]
+  },
+  {
+    "id": "broccolini",
+    "sku": "337671",
+    "name": "Broccolini",
+    "category": "Brassica",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bunch",
+        "label": "Bunch",
+        "unit": "each",
+        "price": 500
+      }
+    ]
+  },
+  {
+    "id": "brussels-sprouts",
+    "sku": "538131",
+    "name": "Brussels Sprouts",
+    "category": "Brassica",
+    "gst": "free",
+    "options": [
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 1500
+      }
+    ]
+  },
+  {
+    "id": "cabbage",
+    "sku": "675454",
+    "name": "Cabbage",
+    "category": "Brassica",
+    "gst": "free",
+    "options": [
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 800
+      }
+    ]
+  },
+  {
+    "id": "capsicum",
+    "sku": "493841",
+    "name": "Capsicum",
+    "category": "Fruiting",
+    "gst": "free",
+    "options": [
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 1800
+      },
+      {
+        "id": "punnet",
+        "label": "Punnet",
+        "unit": "each",
+        "price": 500
+      }
+    ]
+  },
+  {
+    "id": "carrots",
+    "sku": "690051",
+    "name": "Carrots",
+    "category": "Roots",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bunch",
+        "label": "Bunch",
+        "unit": "each",
+        "price": 500
+      },
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 1200
+      }
+    ]
+  },
+  {
+    "id": "chard",
+    "sku": "886344",
+    "name": "Chard",
+    "category": "Cooking Greens",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bunch",
+        "label": "Bunch",
+        "unit": "each",
+        "price": 500
+      }
+    ]
+  },
+  {
+    "id": "cherry-tomato",
+    "sku": "183807",
+    "name": "Cherry Tomato",
+    "category": "Fruiting",
+    "gst": "free",
+    "options": [
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 1800
+      },
+      {
+        "id": "punnet",
+        "label": "Punnet",
+        "unit": "each",
+        "price": 500
+      }
+    ]
+  },
+  {
+    "id": "chili",
+    "sku": "777460",
+    "name": "Chili",
+    "category": "Fruiting",
+    "gst": "free",
+    "options": [
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 2500
+      },
+      {
+        "id": "punnet",
+        "label": "Punnet",
+        "unit": "each",
+        "price": 500
+      }
+    ]
+  },
+  {
+    "id": "coriander",
+    "sku": "296523",
+    "name": "Coriander",
+    "category": "Herbs",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bunch",
+        "label": "Bunch",
+        "unit": "each",
+        "price": 400
+      }
+    ]
+  },
+  {
+    "id": "cucumber",
+    "sku": "870067",
+    "name": "Cucumber",
+    "category": "Fruiting",
+    "gst": "free",
+    "options": [
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 900
+      },
+      {
+        "id": "punnet",
+        "label": "Punnet",
+        "unit": "each",
+        "price": 500
+      }
+    ]
+  },
+  {
+    "id": "dahlia",
+    "sku": "280842",
+    "name": "Dahlia",
+    "category": "Flowers",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bouquet",
+        "label": "Bouquet",
+        "unit": "each",
+        "price": 2200
+      }
+    ]
+  },
+  {
+    "id": "daikon-radish",
+    "sku": "835859",
+    "name": "Daikon Radish",
+    "category": "Roots",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bunch",
+        "label": "Bunch",
+        "unit": "each",
+        "price": 500
+      }
+    ]
+  },
+  {
+    "id": "dill",
+    "sku": "558127",
+    "name": "Dill",
+    "category": "Herbs",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bunch",
+        "label": "Bunch",
+        "unit": "each",
+        "price": 400
+      }
+    ]
+  },
+  {
+    "id": "eggplant",
+    "sku": "387181",
+    "name": "Eggplant",
+    "category": "Fruiting",
+    "gst": "free",
+    "options": [
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 1000
+      }
+    ]
+  },
+  {
+    "id": "fennel",
+    "sku": "679138",
+    "name": "Fennel",
+    "category": "Herbs",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bunch",
+        "label": "Bunch",
+        "unit": "each",
+        "price": 400
+      }
+    ]
+  },
+  {
+    "id": "gai-lan",
+    "sku": "816430",
+    "name": "Gai Lan",
+    "category": "Cooking Greens",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bunch",
+        "label": "Bunch",
+        "unit": "each",
+        "price": 450
+      }
+    ]
+  },
+  {
+    "id": "garlic",
+    "sku": "837440",
+    "name": "Garlic",
+    "category": "Alliums",
+    "gst": "free",
+    "options": [
+      {
+        "id": "elephant",
+        "label": "Elephant",
+        "unit": "kg",
+        "price": 4800
+      },
+      {
+        "id": "true",
+        "label": "True",
+        "unit": "kg",
+        "price": 6000
+      },
+      {
+        "id": "scapes",
+        "label": "Scapes",
+        "unit": "each",
+        "price": 400
+      }
+    ]
+  },
+  {
+    "id": "jerusalem-artichokes",
+    "sku": "938650",
+    "name": "Jerusalem Artichokes",
+    "category": "Roots",
+    "gst": "free",
+    "options": [
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 2000
+      }
+    ]
+  },
+  {
+    "id": "kale",
+    "sku": "335414",
+    "name": "Kale",
+    "category": "Cooking Greens",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bunch",
+        "label": "Bunch",
+        "unit": "each",
+        "price": 500
+      }
+    ]
+  },
+  {
+    "id": "kohlrabi",
+    "sku": "534018",
+    "name": "Kohlrabi",
+    "category": "Roots",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bunch",
+        "label": "Bunch",
+        "unit": "each",
+        "price": 400
+      },
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 1000
+      }
+    ]
+  },
+  {
+    "id": "komatsuna",
+    "sku": "381939",
+    "name": "Komatsuna",
+    "category": "Cooking Greens",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bunch",
+        "label": "Bunch",
+        "unit": "each",
+        "price": 450
+      }
+    ]
+  },
+  {
+    "id": "leek",
+    "sku": "911087",
+    "name": "Leek",
+    "category": "Alliums",
+    "gst": "free",
+    "options": [
+      {
+        "id": "single",
+        "label": "Single",
+        "unit": "each",
+        "price": 500
+      }
+    ]
+  },
+  {
+    "id": "lettuce-heads",
+    "sku": "851383",
+    "name": "Lettuce Heads",
+    "category": "Salad Greens",
+    "gst": "free",
+    "options": [
+      {
+        "id": "large-head",
+        "label": "Large head",
+        "unit": "each",
+        "price": 450
+      },
+      {
+        "id": "small-head",
+        "label": "Small head",
+        "unit": "each",
+        "price": 300
+      }
+    ]
+  },
+  {
+    "id": "mustard-greens",
+    "sku": "343009",
+    "name": "Mustard Greens",
+    "category": "Cooking Greens",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bunch",
+        "label": "Bunch",
+        "unit": "each",
+        "price": 500
+      }
+    ]
+  },
+  {
+    "id": "onions",
+    "sku": "831838",
+    "name": "Onions",
+    "category": "Alliums",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bunch",
+        "label": "Bunch",
+        "unit": "each",
+        "price": 600
+      },
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 1000
+      }
+    ]
+  },
+  {
+    "id": "parsley",
+    "sku": "508617",
+    "name": "Parsley",
+    "category": "Herbs",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bunch",
+        "label": "Bunch",
+        "unit": "each",
+        "price": 400
+      }
+    ]
+  },
+  {
+    "id": "pea-shoots",
+    "sku": "802830",
+    "name": "Pea Shoots",
+    "category": "Salad Greens",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bag",
+        "label": "Bag",
+        "unit": "each",
+        "price": 500
+      },
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 6000
+      }
+    ]
+  },
+  {
+    "id": "peas",
+    "sku": "551543",
+    "name": "Peas",
+    "category": "Legume",
+    "gst": "free",
+    "options": [
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 5000
+      },
+      {
+        "id": "punnet",
+        "label": "Punnet",
+        "unit": "each",
+        "price": 500
+      }
+    ]
+  },
+  {
+    "id": "poppies",
+    "sku": "451694",
+    "name": "Poppies",
+    "category": "Flowers",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bouquet",
+        "label": "Bouquet",
+        "unit": "each",
+        "price": 2200
+      }
+    ]
+  },
+  {
+    "id": "potatoes",
+    "sku": "509558",
+    "name": "Potatoes",
+    "category": "Roots",
+    "gst": "free",
+    "options": [
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 850
+      },
+      {
+        "id": "punnet",
+        "label": "Punnet",
+        "unit": "each",
+        "price": 500
+      }
+    ]
+  },
+  {
+    "id": "pumpkin",
+    "sku": "355457",
+    "name": "Pumpkin",
+    "category": "Fruiting",
+    "gst": "free",
+    "options": [
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 500
+      }
+    ]
+  },
+  {
+    "id": "ranunculus",
+    "sku": "258931",
+    "name": "Ranunculus",
+    "category": "Flowers",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bouquet",
+        "label": "Bouquet",
+        "unit": "each",
+        "price": 2200
+      }
+    ]
+  },
+  {
+    "id": "rocket",
+    "sku": "179905",
+    "name": "Rocket",
+    "category": "Salad Greens",
+    "gst": "free",
+    "options": [
+      {
+        "id": "small-bag",
+        "label": "Small bag",
+        "unit": "each",
+        "price": 500
+      },
+      {
+        "id": "large-bag",
+        "label": "Large bag",
+        "unit": "each",
+        "price": 900
+      },
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 3800
+      },
+      {
+        "id": "bunch",
+        "label": "Bunch",
+        "unit": "each",
+        "price": 500
+      }
+    ]
+  },
+  {
+    "id": "salad-mix",
+    "sku": "956781",
+    "name": "Salad Mix",
+    "category": "Salad Greens",
+    "gst": "free",
+    "options": [
+      {
+        "id": "small-bag",
+        "label": "Small bag",
+        "unit": "each",
+        "price": 500
+      },
+      {
+        "id": "large-bag",
+        "label": "Large bag",
+        "unit": "each",
+        "price": 900
+      },
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 3000
+      }
+    ]
+  },
+  {
+    "id": "salad-radish",
+    "sku": "228743",
+    "name": "Salad Radish",
+    "category": "Roots",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bunch",
+        "label": "Bunch",
+        "unit": "each",
+        "price": 400
+      }
+    ]
+  },
+  {
+    "id": "salad-turnip",
+    "sku": "562010",
+    "name": "Salad Turnip",
+    "category": "Roots",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bunch",
+        "label": "Bunch",
+        "unit": "each",
+        "price": 400
+      }
+    ]
+  },
+  {
+    "id": "spinach",
+    "sku": "746535",
+    "name": "Spinach",
+    "category": "Salad Greens",
+    "gst": "free",
+    "options": [
+      {
+        "id": "small-bag",
+        "label": "Small bag",
+        "unit": "each",
+        "price": 500
+      },
+      {
+        "id": "large-bag",
+        "label": "Large bag",
+        "unit": "each",
+        "price": 900
+      },
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 4000
+      },
+      {
+        "id": "bunch",
+        "label": "Bunch",
+        "unit": "each",
+        "price": 500
+      }
+    ]
+  },
+  {
+    "id": "spring-onion",
+    "sku": "554376",
+    "name": "Spring Onion",
+    "category": "Alliums",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bunch",
+        "label": "Bunch",
+        "unit": "each",
+        "price": 500
+      }
+    ]
+  },
+  {
+    "id": "tokyo-bekana",
+    "sku": "355700",
+    "name": "Tokyo Bekana",
+    "category": "Cooking Greens",
+    "gst": "free",
+    "options": [
+      {
+        "id": "bunch",
+        "label": "Bunch",
+        "unit": "each",
+        "price": 500
+      },
+      {
+        "id": "single",
+        "label": "Single",
+        "unit": "each",
+        "price": 300
+      }
+    ]
+  },
+  {
+    "id": "tomato",
+    "sku": "571673",
+    "name": "Tomato",
+    "category": "Fruiting",
+    "gst": "free",
+    "options": [
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 1500
+      },
+      {
+        "id": "punnet",
+        "label": "Punnet",
+        "unit": "each",
+        "price": 500
+      }
+    ]
+  },
+  {
+    "id": "wombok",
+    "sku": "817095",
+    "name": "Wombok",
+    "category": "Brassica",
+    "gst": "free",
+    "options": [
+      {
+        "id": "single",
+        "label": "Single",
+        "unit": "each",
+        "price": 500
+      },
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 800
+      }
+    ]
+  },
+  {
+    "id": "zucchini",
+    "sku": "150414",
+    "name": "Zucchini",
+    "category": "Fruiting",
+    "gst": "free",
+    "options": [
+      {
+        "id": "by-weight",
+        "label": "By weight",
+        "unit": "kg",
+        "price": 900
+      },
+      {
+        "id": "punnet",
+        "label": "Punnet",
+        "unit": "each",
+        "price": 500
+      }
+    ]
+  }
+]
