@@ -119,7 +119,7 @@ export function usePayments({ upsert, get, all }: Store) {
         upsert(saleId, {
           status: "complete",
           detail: undefined,
-          card: { ...sale.card!, transactionUuid: r.transactionUuid, scheme: r.scheme },
+          card: { ...sale.card!, transactionUuid: r.transactionUuid, scheme: r.scheme, receiptLink: r.receiptLink },
         });
       } else {
         upsert(saleId, { status: "card_failed", detail: `Declined: ${r.responseText || r.responseCode}` });
@@ -188,7 +188,11 @@ export function usePayments({ upsert, get, all }: Store) {
       upsert(
         sale.id,
         tx.$type === "Approved"
-          ? { status: "complete", detail: undefined, card: { ...sale.card!, transactionUuid: tx.transactionUuid, scheme: tx.scheme } }
+          ? {
+              status: "complete",
+              detail: undefined,
+              card: { ...sale.card!, transactionUuid: tx.transactionUuid, scheme: tx.scheme, receiptLink: tx.receiptLink },
+            }
           : { status: "card_failed", detail: `Declined: ${tx.responseText || tx.responseCode || "failed"}` }
       ),
     [upsert]

@@ -3,6 +3,7 @@ import type { Sale } from "./types";
 import { money, price } from "./money";
 import { Check, Terminal } from "./Icons";
 import { Keypad, press } from "./Keypad";
+import { ReceiptQr } from "./ReceiptQr";
 
 // ---------- Cash ----------
 
@@ -180,14 +181,16 @@ const AUTO_RETURN_S = 5;
 
 export function Done({ sale, onNext }: { sale: Sale; onNext: () => void }) {
   const [left, setLeft] = useState(AUTO_RETURN_S);
+  const [showReceipt, setShowReceipt] = useState(false);
   useEffect(() => {
+    if (showReceipt) return; // no rush while the customer scans
     if (left <= 0) {
       onNext();
       return;
     }
     const t = setTimeout(() => setLeft(left - 1), 1000);
     return () => clearTimeout(t);
-  }, [left, onNext]);
+  }, [left, onNext, showReceipt]);
 
   const isCash = sale.method === "cash";
   return (
@@ -203,11 +206,17 @@ export function Done({ sale, onNext }: { sale: Sale; onNext: () => void }) {
             {isCash ? `Received ${money(sale.cash!.tendered)} · change ${money(sale.cash!.change)}` : `Card${sale.card?.scheme ? ` · ${sale.card.scheme}` : ""} · receipt on the terminal`}
           </div>
         </div>
-        <button className="btn-go" style={{ width: 520 }} onClick={onNext}>
-          Next customer
-        </button>
+        <div className="row">
+          <button className="btn-plain" style={{ width: 260 }} onClick={() => setShowReceipt(true)}>
+            Receipt
+          </button>
+          <button className="btn-go" style={{ width: 400 }} onClick={onNext}>
+            Next customer
+          </button>
+        </div>
         <div className="how">Back to the till by itself in {left} seconds</div>
       </div>
+      {showReceipt && <ReceiptQr sale={sale} closeLabel="Done · next customer" onClose={onNext} />}
     </div>
   );
 }
