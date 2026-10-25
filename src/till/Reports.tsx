@@ -3,6 +3,7 @@ import type { Sale } from "./types";
 import { money } from "./money";
 import { salesCsv, summarise } from "./basket";
 import { isToday, loadLog, loadSettings, saveSettings } from "./storage";
+import { ReceiptQr } from "./ReceiptQr";
 
 function download(name: string, text: string, type: string) {
   const a = document.createElement("a");
@@ -13,6 +14,7 @@ function download(name: string, text: string, type: string) {
 }
 
 const stamp = () => new Date().toISOString().slice(0, 10);
+const timeOf = (s: Sale) => new Date(s.createdAt).toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" });
 
 const STATUS_TEXT: Record<string, string> = {
   card_pending: "Being charged",
@@ -29,6 +31,8 @@ export function Reports({ sales }: { sales: Sale[] }) {
   const fees = rate > 0 ? Math.round((sum.card * rate) / 100) : null;
   const cardPct = sum.gross ? Math.round((sum.card / sum.gross) * 100) : 0;
   const open = today.filter((s) => s.method === "card" && s.status !== "complete" && s.status !== "card_failed");
+  const recent = useMemo(() => today.filter((s) => s.status === "complete").slice(-15).reverse(), [today]);
+  const [receiptFor, setReceiptFor] = useState<Sale | null>(null);
 
   const saveRate = (v: string) => {
     setFeeRate(v);
@@ -100,7 +104,7 @@ export function Reports({ sales }: { sales: Sale[] }) {
                 {open.map((s) => (
                   <div key={s.id} className="c">
                     <span className="grow">
-                      Sale {s.number} · {new Date(s.createdAt).toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" })}
+                      Sale {s.number} · {timeOf(s)}
                     </span>
                     <strong className="num">{money(s.total)}</strong>
                     <span>{STATUS_TEXT[s.status]}</span>
@@ -134,6 +138,27 @@ export function Reports({ sales }: { sales: Sale[] }) {
           </button>
         </section>
       </div>
+
+      {recent.length > 0 && (
+        <section className="panel">
+          <h2>Recent sales</h2>
+          <div className="checks">
+            {recent.map((s) => (
+              <div key={s.id} className="c">
+                <span className="grow">
+                  Sale {s.number} · {timeOf(s)} · {s.method === "card" ? "Card" : "Cash"} · {s.lines.map((l) => l.name).join(", ")}
+                </span>
+                <strong className="num">{money(s.total)}</strong>
+                <button className="btn-plain" style={{ minHeight: 44, padding: "0 16px", fontSize: 17, borderWidth: 2 }} onClick={() => setReceiptFor(s)}>
+                  Receipt
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {receiptFor && <ReceiptQr sale={receiptFor} closeLabel="Close" onClose={() => setReceiptFor(null)} />}
     </div>
   );
 }

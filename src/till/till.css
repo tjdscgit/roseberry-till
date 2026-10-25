@@ -147,6 +147,11 @@ h1, h2, p { margin: 0; }
 .key { height: 92px; border-radius: 16px; border: 2px solid var(--line); background: #fff; font-size: 38px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 .key:active { background: var(--panel); }
 
+/* Receipt QR code */
+.dialog.receipt-qr { width: min(560px, 96vw); flex-direction: column; align-items: center; gap: 14px; padding: 28px; text-align: center; }
+.receipt-qr .qr { width: min(400px, 70vw, 52dvh); height: auto; }
+.receipt-qr .btn-go { width: 100%; }
+
 /* Full-screen steps: cash, card, done */
 .screen { flex-grow: 1; display: flex; min-height: 0; }
 .cash { gap: 32px; padding: 24px 32px; }

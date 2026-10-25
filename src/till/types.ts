@@ -51,7 +51,7 @@ export interface Sale {
   status: SaleStatus;
   detail?: string;
   cash?: { tendered: number; change: number };
-  card?: { reference: string; transactionUuid?: string; scheme?: string; timedOut?: boolean };
+  card?: { reference: string; transactionUuid?: string; scheme?: string; receiptLink?: string; timedOut?: boolean };
   // Card sale moved off the screen while still being checked; its outcome must be shown later.
   setAside?: boolean;
   acknowledged?: boolean;
