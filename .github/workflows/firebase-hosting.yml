@@ -1,0 +1,53 @@
+name: Deploy to Firebase Hosting
+
+# Builds the till and publishes it to https://roseberry-till.web.app whenever main changes.
+# Needs two repository secrets: ZELLER_NPM_TOKEN (to install the Zeller SDK) and
+# FIREBASE_SERVICE_ACCOUNT (the key Firebase generates under Settings → Service accounts).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firebase-hosting
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the Firebase key is set
+        id: key
+        env:
+          KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: echo "present=$([ -n "$KEY" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        if: steps.key.outputs.present == 'yes'
+        with:
+          node-version: "20"
+
+      - name: Install
+        if: steps.key.outputs.present == 'yes'
+        env:
+          ZELLER_NPM_TOKEN: ${{ secrets.ZELLER_NPM_TOKEN }}
+        run: npm ci --no-audit --no-fund
+
+      - name: Build
+        if: steps.key.outputs.present == 'yes'
+        env:
+          BASE_PATH: /
+        run: npm run build
+
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        if: steps.key.outputs.present == 'yes'
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: live
+          projectId: roseberry-till
