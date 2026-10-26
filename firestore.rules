@@ -1,0 +1,21 @@
+rules_version = '2';
+
+// Only someone signed in to the till can read or change anything. Accounts are created by hand
+// in the Firebase console, and public sign-up is switched off there, so "signed in" means one of
+// Roseberry's own logins.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /products/{productId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.resource.data.name is string
+        && request.resource.data.options is list
+        && request.resource.size() < 900000;
+    }
+
+    // Everything else is closed until it is deliberately opened.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

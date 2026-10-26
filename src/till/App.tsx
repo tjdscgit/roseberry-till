@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import catalogue from "./catalogue.json";
 import type { Line, Option, Product, Sale } from "./types";
+import { signOutTill, useProducts, useUser } from "./firebase";
+import { SignIn } from "./SignIn";
+import { Products } from "./Products";
 import { money } from "./money";
 import { addEach, addWeight, basketTotal, changeQty, removeLine, summarise } from "./basket";
 import { isToday, useSales } from "./storage";
@@ -16,9 +18,8 @@ type Screen =
   | { name: "cash" }
   | { name: "card"; saleId: string }
   | { name: "done"; saleId: string }
-  | { name: "reports" };
-
-const products = (catalogue as Product[]).filter((p) => !p.hidden && p.options.length);
+  | { name: "reports" }
+  | { name: "products" };
 
 function useOnline() {
   const [online, setOnline] = useState(navigator.onLine);
@@ -52,6 +53,9 @@ export default function App() {
   const pay = usePayments({ upsert, get, all });
   const online = useOnline();
   useWakeLock();
+  const user = useUser();
+  const { products: allProducts } = useProducts(user);
+  const products = useMemo(() => allProducts.filter((p) => !p.hidden && p.options.length), [allProducts]);
 
   const [lines, setLines] = useState<Line[]>([]);
   const [screen, setScreen] = useState<Screen>({ name: "sell" });
@@ -166,13 +170,16 @@ export default function App() {
           </button>
         )}
         <span className="chip">{online ? "Online" : <strong style={{ color: "#FBBF24" }}>Offline</strong>}</span>
+        <button className="btn-light" onClick={() => setScreen({ name: "products" })}>
+          Products
+        </button>
         <button className="btn-light" onClick={() => setScreen({ name: "reports" })}>
           Today {money(today.gross)} · {today.count} sale{today.count === 1 ? "" : "s"}
         </button>
       </header>
     ) : (
       <header className="topbar">
-        {(screen.name === "cash" || screen.name === "reports") && (
+        {(screen.name === "cash" || screen.name === "reports" || screen.name === "products") && (
           <button className="btn-back" onClick={toSell}>
             <Back /> {screen.name === "cash" ? "Back to basket" : "Back to till"}
           </button>
@@ -182,9 +189,27 @@ export default function App() {
           {screen.name === "card" && "Card payment"}
           {screen.name === "done" && `Sale ${get(screen.saleId)?.number ?? ""}`}
           {screen.name === "reports" && `Today · ${new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "short" })}`}
+          {screen.name === "products" && "Products"}
         </h1>
+        {screen.name === "products" && (
+          <button
+            className="btn-light"
+            onClick={() => confirm("Sign out of the till on this device? You'll need the password to sign back in.") && signOutTill()}
+          >
+            Sign out
+          </button>
+        )}
       </header>
     );
+
+  if (user === undefined) return <div className="app" />;
+  if (user === null) {
+    return (
+      <div className="app">
+        <SignIn />
+      </div>
+    );
+  }
 
   return (
     <div className="app">
@@ -263,6 +288,8 @@ export default function App() {
       {screen.name === "done" && get(screen.saleId) && <Done sale={get(screen.saleId)!} onNext={toSell} />}
 
       {screen.name === "reports" && <Reports sales={sales} />}
+
+      {screen.name === "products" && <Products products={allProducts} />}
 
       {picking && (
         <OptionDialog
