@@ -20,6 +20,7 @@
 
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
+html { touch-action: manipulation; -webkit-text-size-adjust: 100%; }
 body {
   font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
   color: var(--ink);
