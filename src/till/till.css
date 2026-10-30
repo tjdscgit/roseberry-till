@@ -269,3 +269,12 @@ h1, h2, p { margin: 0; }
   .keypad { width: 280px; }
   .key { height: 80px; }
 }
+
+/* Price number pad in the product editor */
+.price-btn { width: 120px; height: 52px; padding: 0 14px; border: 2px solid var(--line-strong); border-radius: 12px; background: #fff; font-size: 19px; text-align: right; }
+.dialog.price-pad { width: min(420px, 96vw); align-items: stretch; gap: 14px; padding: 24px; }
+.price-pad .readout { min-height: 120px; flex-grow: 0; }
+.price-pad .readout .w { font-size: 56px; }
+.price-pad .keypad { width: 100%; padding: 0; }
+.price-pad .key { height: 76px; }
+.price-pad .row > * { flex: 1; }
