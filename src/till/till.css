@@ -278,3 +278,23 @@ h1, h2, p { margin: 0; }
 .price-pad .keypad { width: 100%; padding: 0; }
 .price-pad .key { height: 76px; }
 .price-pad .row > * { flex: 1; }
+
+/* Sales list */
+.saleslist { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; padding: 20px 24px; }
+.saleslist .sub { color: var(--muted); font-size: 17px; }
+.saleslist .grow { flex-grow: 1; }
+.day h2 { display: flex; justify-content: space-between; font-size: 20px; padding: 0 4px 8px; border-bottom: 2px solid var(--ink); }
+.sale { border-bottom: 1px solid #dde2df; }
+.sale-row { width: 100%; min-height: 60px; display: flex; align-items: center; gap: 14px; padding: 8px 4px; border: 0; background: transparent; text-align: left; font-size: 18px; }
+.sale.open .sale-row { background: var(--panel); }
+.sale-row .when { width: 76px; color: var(--muted); }
+.sale-row .no { width: 76px; font-weight: 700; }
+.sale-row .what { flex-grow: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.sale-row .how { width: 170px; }
+.sale-row .amt { width: 100px; text-align: right; font-weight: 700; }
+.sale.unpaid .sale-row { opacity: 0.6; }
+.sale-detail { display: flex; flex-direction: column; gap: 12px; padding: 12px 16px 18px; background: var(--panel); }
+.sale-detail ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.sale-detail li { display: flex; justify-content: space-between; gap: 16px; font-size: 18px; }
+.sale-detail .pay-info { color: var(--muted); font-size: 17px; }
+.sale-detail .btn-go { align-self: flex-start; }
