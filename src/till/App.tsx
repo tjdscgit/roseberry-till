@@ -3,6 +3,7 @@ import type { Line, Option, Product, Sale } from "./types";
 import { signOutTill, useProducts, useUser } from "./firebase";
 import { SignIn } from "./SignIn";
 import { Products } from "./Products";
+import { SalesList } from "./SalesList";
 import { money } from "./money";
 import { addEach, addWeight, basketTotal, changeQty, removeLine, summarise } from "./basket";
 import { isToday, useSales } from "./storage";
@@ -19,7 +20,8 @@ type Screen =
   | { name: "card"; saleId: string }
   | { name: "done"; saleId: string }
   | { name: "reports" }
-  | { name: "products" };
+  | { name: "products" }
+  | { name: "sales" };
 
 function useOnline() {
   const [online, setOnline] = useState(navigator.onLine);
@@ -170,6 +172,9 @@ export default function App() {
           </button>
         )}
         <span className="chip">{online ? "Online" : <strong style={{ color: "#FBBF24" }}>Offline</strong>}</span>
+        <button className="btn-light" onClick={() => setScreen({ name: "sales" })}>
+          Sales
+        </button>
         <button className="btn-light" onClick={() => setScreen({ name: "products" })}>
           Products
         </button>
@@ -179,7 +184,7 @@ export default function App() {
       </header>
     ) : (
       <header className="topbar">
-        {(screen.name === "cash" || screen.name === "reports" || screen.name === "products") && (
+        {(screen.name === "cash" || screen.name === "reports" || screen.name === "products" || screen.name === "sales") && (
           <button className="btn-back" onClick={toSell}>
             <Back /> {screen.name === "cash" ? "Back to basket" : "Back to till"}
           </button>
@@ -190,6 +195,7 @@ export default function App() {
           {screen.name === "done" && `Sale ${get(screen.saleId)?.number ?? ""}`}
           {screen.name === "reports" && `Today · ${new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "short" })}`}
           {screen.name === "products" && "Products"}
+          {screen.name === "sales" && "Sales"}
         </h1>
         {screen.name === "products" && (
           <button
@@ -290,6 +296,8 @@ export default function App() {
       {screen.name === "reports" && <Reports sales={sales} />}
 
       {screen.name === "products" && <Products products={allProducts} />}
+
+      {screen.name === "sales" && <SalesList sales={sales} />}
 
       {picking && (
         <OptionDialog
