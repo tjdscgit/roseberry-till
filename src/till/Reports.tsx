@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { Sale } from "./types";
 import { money } from "./money";
 import { salesCsv, summarise } from "./basket";
-import { isToday, loadLog, loadSettings, saveSettings } from "./storage";
+import { loadLog, loadSettings, saveSettings } from "./storage";
 import { ReceiptQr } from "./ReceiptQr";
 
 function download(name: string, text: string, type: string) {
@@ -13,7 +13,38 @@ function download(name: string, text: string, type: string) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
-const stamp = () => new Date().toISOString().slice(0, 10);
+const dayStart = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const addDays = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+type PeriodId = "today" | "yesterday" | "week" | "lastweek" | "month" | "all" | "day";
+const PERIODS: { id: Exclude<PeriodId, "day">; label: string }[] = [
+  { id: "today", label: "Today" },
+  { id: "yesterday", label: "Yesterday" },
+  { id: "week", label: "This week" },
+  { id: "lastweek", label: "Last week" },
+  { id: "month", label: "This month" },
+  { id: "all", label: "Last 60 days" },
+];
+
+// From (inclusive) and to (exclusive) for a period; weeks start on Monday.
+function range(id: PeriodId, day: string): [Date, Date] {
+  const today = dayStart(new Date());
+  const monday = addDays(today, -((today.getDay() + 6) % 7));
+  switch (id) {
+    case "today": return [today, addDays(today, 1)];
+    case "yesterday": return [addDays(today, -1), today];
+    case "week": return [monday, addDays(today, 1)];
+    case "lastweek": return [addDays(monday, -7), monday];
+    case "month": return [new Date(today.getFullYear(), today.getMonth(), 1), addDays(today, 1)];
+    case "all": return [addDays(today, -60), addDays(today, 1)];
+    case "day": {
+      const [y, m, d] = day.split("-").map(Number);
+      const from = new Date(y, m - 1, d);
+      return [from, addDays(from, 1)];
+    }
+  }
+}
 const timeOf = (s: Sale) => new Date(s.createdAt).toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" });
 
 const STATUS_TEXT: Record<string, string> = {
@@ -24,7 +55,16 @@ const STATUS_TEXT: Record<string, string> = {
 };
 
 export function Reports({ sales }: { sales: Sale[] }) {
-  const today = useMemo(() => sales.filter((s) => isToday(s.createdAt)), [sales]);
+  const [period, setPeriod] = useState<PeriodId>("today");
+  const [day, setDay] = useState(() => ymd(new Date()));
+  const [from, to] = range(period, day);
+  const label = period === "day" ? new Date(from).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" }) : PERIODS.find((p) => p.id === period)!.label;
+  const fileStamp = period === "today" || period === "yesterday" || period === "day" ? ymd(from) : `${ymd(from)}-to-${ymd(addDays(to, -1))}`;
+  const today = useMemo(
+    () => sales.filter((s) => { const t = new Date(s.createdAt); return t >= from && t < to; }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sales, from.getTime(), to.getTime()]
+  );
   const sum = useMemo(() => summarise(today), [today]);
   const [feeRate, setFeeRate] = useState(() => loadSettings().feeRate?.toString() ?? "");
   const rate = Number(feeRate);
@@ -42,6 +82,17 @@ export function Reports({ sales }: { sales: Sale[] }) {
 
   return (
     <div className="reports">
+      <div className="periods" role="radiogroup" aria-label="Period">
+        {PERIODS.map((p) => (
+          <button key={p.id} role="radio" aria-checked={period === p.id} className={`pill${period === p.id ? " on" : ""}`} onClick={() => setPeriod(p.id)}>
+            {p.label}
+          </button>
+        ))}
+        <label className={`pill date${period === "day" ? " on" : ""}`}>
+          Pick a day
+          <input type="date" value={day} max={ymd(new Date())} aria-label="Pick a day" onChange={(e) => { if (e.target.value) { setDay(e.target.value); setPeriod("day"); } }} />
+        </label>
+      </div>
       <div className="tiles">
         <div className="stat dark">
           <span className="label">Gross sales</span>
@@ -91,7 +142,7 @@ export function Reports({ sales }: { sales: Sale[] }) {
               {!sum.items.length && (
                 <tr>
                   <td colSpan={3} style={{ color: "var(--muted)", fontWeight: 400 }}>
-                    No sales yet today
+                    No sales in this period
                   </td>
                 </tr>
               )}
@@ -130,10 +181,10 @@ export function Reports({ sales }: { sales: Sale[] }) {
               <input inputMode="decimal" value={feeRate} placeholder="1.4" aria-label="Zeller card fee percent" onChange={(e) => saveRate(e.target.value)} /> %
             </span>
           </label>
-          <button className="btn-plain small" onClick={() => download(`roseberry-sales-${stamp()}.csv`, salesCsv(today), "text/csv")}>
-            Export today (CSV)
+          <button className="btn-plain small" onClick={() => download(`roseberry-sales-${fileStamp}.csv`, salesCsv(today), "text/csv")}>
+            Export {label.toLowerCase()} (CSV)
           </button>
-          <button className="link" style={{ alignSelf: "flex-start" }} onClick={() => download(`roseberry-till-log-${stamp()}.json`, JSON.stringify({ sales: today, log: loadLog() }, null, 2), "application/json")}>
+          <button className="link" style={{ alignSelf: "flex-start" }} onClick={() => download(`roseberry-till-log-${fileStamp}.json`, JSON.stringify({ sales: today, log: loadLog() }, null, 2), "application/json")}>
             Download payment log
           </button>
         </section>
@@ -141,7 +192,7 @@ export function Reports({ sales }: { sales: Sale[] }) {
 
       {recent.length > 0 && (
         <section className="panel">
-          <h2>Recent sales</h2>
+          <h2>Latest sales · {label}</h2>
           <div className="checks">
             {recent.map((s) => (
               <div key={s.id} className="c">

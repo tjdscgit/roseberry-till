@@ -193,7 +193,7 @@ export default function App() {
           {screen.name === "cash" && "Cash payment"}
           {screen.name === "card" && "Card payment"}
           {screen.name === "done" && `Sale ${get(screen.saleId)?.number ?? ""}`}
-          {screen.name === "reports" && `Today · ${new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "short" })}`}
+          {screen.name === "reports" && "Report"}
           {screen.name === "products" && "Products"}
           {screen.name === "sales" && "Sales"}
         </h1>
