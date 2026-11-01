@@ -53,6 +53,13 @@ export function useSales() {
     setSales(ref.current);
   }, []);
 
+  // Swaps the whole list at once (loading or removing test sales).
+  const replace = useCallback((list: Sale[]) => {
+    ref.current = list;
+    write(SALES_KEY, list);
+    setSales(list);
+  }, []);
+
   const get = useCallback((id: string) => ref.current.find((s) => s.id === id), []);
   const all = useCallback(() => ref.current, []);
 
@@ -61,7 +68,7 @@ export function useSales() {
     []
   );
 
-  return { sales, upsert, get, all, nextNumber };
+  return { sales, upsert, replace, get, all, nextNumber };
 }
 
 // Diagnostic log of every payment call, kept on the iPad and downloadable from Reports.

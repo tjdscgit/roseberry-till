@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "node scripts/deploy.mjs"
   },
   "dependencies": {
     "@fontsource/atkinson-hyperlegible": "^5.2.6",

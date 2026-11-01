@@ -3,6 +3,7 @@ import type { Gst, Product, Unit } from "./types";
 import { saveProduct } from "./firebase";
 import { Close, Plus, Search } from "./Icons";
 import { Photo } from "./Photo";
+import { Keypad, press } from "./Keypad";
 
 // Editing products on the iPad. Changes save to Firebase and appear on every signed-in device.
 
@@ -97,6 +98,8 @@ export function Products({ products }: { products: Product[] }) {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState("");
+  const [padFor, setPadFor] = useState<number | null>(null);
+  const [padValue, setPadValue] = useState("");
   const camera = useRef<HTMLInputElement>(null);
   const library = useRef<HTMLInputElement>(null);
 
@@ -196,9 +199,14 @@ export function Products({ products }: { products: Product[] }) {
               {draft.options.map((o, i) => (
                 <div key={i} className="optrow">
                   <input aria-label="Option name" value={o.label} placeholder="e.g. Bunch" onChange={(e) => setOption(i, { label: e.target.value })} />
-                  <span className="dollar">
-                    $<input aria-label="Price" inputMode="decimal" value={o.price} placeholder="0.00" onChange={(e) => setOption(i, { price: e.target.value.replace(/[^0-9.]/g, "") })} />
-                  </span>
+                  {/* iPads have no number-only keyboard, so prices use the till's own number pad */}
+                  <button className="price-btn num" aria-label={`Price for ${o.label || "option"}`} onClick={() => {
+                      setPadValue("");
+                      setPadFor(i);
+                    }}
+                  >
+                    ${o.price || "0.00"}
+                  </button>
                   <select aria-label="Priced" value={o.unit} onChange={(e) => setOption(i, { unit: e.target.value as Unit })}>
                     <option value="each">each</option>
                     <option value="kg">per kg</option>
@@ -258,6 +266,34 @@ export function Products({ products }: { products: Product[] }) {
         </main>
       ) : (
         <main className="editor empty">Choose a product to edit, or add a new one.</main>
+      )}
+
+      {draft && padFor !== null && draft.options[padFor] && (
+        <div className="backdrop" onClick={(e) => e.target === e.currentTarget && setPadFor(null)}>
+          <section className="dialog price-pad" role="dialog" aria-modal="true" aria-label="Price">
+            <h2>{draft.options[padFor].label || "Price"}</h2>
+            <div className="readout num">
+              <div className="hint">{draft.options[padFor].unit === "kg" ? "Price per kg" : "Price each"}</div>
+              <div className="w">${padValue || "0"}</div>
+            </div>
+            <Keypad extra="." onKey={(k) => setPadValue((v) => press(v, k, 6))} />
+            <div className="row">
+              <button className="btn-plain small" style={{ borderWidth: 2 }} onClick={() => setPadFor(null)}>
+                Cancel
+              </button>
+              <button
+                className="btn-go small"
+                onClick={() => {
+                  const n = Number(padValue);
+                  if (n > 0) setOption(padFor, { price: n.toFixed(2) });
+                  setPadFor(null);
+                }}
+              >
+                Done
+              </button>
+            </div>
+          </section>
+        </div>
       )}
     </div>
   );

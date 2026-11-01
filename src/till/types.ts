@@ -55,4 +55,6 @@ export interface Sale {
   // Card sale moved off the screen while still being checked; its outcome must be shown later.
   setAside?: boolean;
   acknowledged?: boolean;
+  // Made-up sale loaded for testing; can be removed in one go from the report screen.
+  test?: boolean;
 }
