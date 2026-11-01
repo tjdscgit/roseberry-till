@@ -54,7 +54,19 @@ const STATUS_TEXT: Record<string, string> = {
   card_failed: "Not charged",
 };
 
-export function Reports({ sales }: { sales: Sale[] }) {
+export function Reports({ sales, onReplace }: { sales: Sale[]; onReplace: (list: Sale[]) => void }) {
+  const testCount = sales.filter((s) => s.test).length;
+  const loadTest = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const made = (JSON.parse(await file.text()) as Sale[]).filter((s) => s.id && s.createdAt && Array.isArray(s.lines));
+      onReplace([...sales.filter((s) => !s.test), ...made.map((s) => ({ ...s, test: true }))].sort((a, b) => a.createdAt.localeCompare(b.createdAt)));
+      alert(`Loaded ${made.length} test sales.`);
+    } catch {
+      alert("That file isn't a test sales file.");
+    }
+  };
+
   const [period, setPeriod] = useState<PeriodId>("today");
   const [day, setDay] = useState(() => ymd(new Date()));
   const [from, to] = range(period, day);
@@ -187,6 +199,17 @@ export function Reports({ sales }: { sales: Sale[] }) {
           <button className="link" style={{ alignSelf: "flex-start" }} onClick={() => download(`roseberry-till-log-${fileStamp}.json`, JSON.stringify({ sales: today, log: loadLog() }, null, 2), "application/json")}>
             Download payment log
           </button>
+          <hr />
+          <span className="sub">Test data{testCount ? ` · ${testCount} test sales loaded` : ""}</span>
+          <label className="link" style={{ alignSelf: "flex-start", cursor: "pointer" }}>
+            Load test sales from a file
+            <input type="file" accept=".json,application/json" hidden onChange={(e) => loadTest(e.target.files?.[0])} />
+          </label>
+          {testCount > 0 && (
+            <button className="link" style={{ alignSelf: "flex-start" }} onClick={() => confirm(`Remove all ${testCount} test sales? Real sales stay.`) && onReplace(sales.filter((s) => !s.test))}>
+              Remove test sales
+            </button>
+          )}
         </section>
       </div>
 

@@ -51,7 +51,7 @@ function useWakeLock() {
 }
 
 export default function App() {
-  const { sales, upsert, get, all, nextNumber } = useSales();
+  const { sales, upsert, replace, get, all, nextNumber } = useSales();
   const pay = usePayments({ upsert, get, all });
   const online = useOnline();
   useWakeLock();
@@ -293,7 +293,7 @@ export default function App() {
 
       {screen.name === "done" && get(screen.saleId) && <Done sale={get(screen.saleId)!} onNext={toSell} />}
 
-      {screen.name === "reports" && <Reports sales={sales} />}
+      {screen.name === "reports" && <Reports sales={sales} onReplace={replace} />}
 
       {screen.name === "products" && <Products products={allProducts} />}
 
