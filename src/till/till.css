@@ -307,9 +307,16 @@ h1, h2, p { margin: 0; }
 /* Editable front page */
 .edit-toggle { margin-left: auto; }
 .grid { grid-auto-flow: dense; }
-.tile.size-w { grid-column: span 2; }
-.tile.size-t { grid-row: span 2; }
-.tile.size-l { grid-column: span 2; grid-row: span 2; }
+/* The front page uses half-size cells so an extra-small tile is one cell; the rest span more. */
+.grid.home { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); grid-auto-rows: 83px; }
+.grid.home .tile.size-s { grid-column: span 2; grid-row: span 2; }
+.grid.home .tile.size-w { grid-column: span 4; grid-row: span 2; }
+.grid.home .tile.size-t { grid-column: span 2; grid-row: span 4; }
+.grid.home .tile.size-l { grid-column: span 4; grid-row: span 4; }
+.tile.size-xs { justify-content: center; }
+.tile.size-xs .photo { display: none; }
+.tile.size-xs .name { padding: 0 8px; font-size: 16px; text-align: center; }
+.tile.size-xs .prices, .tile.size-xs .tag-kg { display: none; }
 .tile.size-t .photo, .tile.size-l .photo { height: auto; flex-grow: 1; font-size: 60px; }
 .tile.size-l .name { font-size: 26px; }
 .tile.group { border-color: var(--line-strong); }

@@ -106,7 +106,7 @@ export function appendLog(kind: LogEntry["kind"], method: string, data?: unknown
 export const loadLog = () => read<LogEntry[]>(LOG_KEY, []);
 
 // The front page: an ordered list of tiles, each a product or a veg group, with a size.
-export type TileSize = "s" | "w" | "t" | "l"; // small 1x1, wide 2x1, tall 1x2, large 2x2
+export type TileSize = "xs" | "s" | "w" | "t" | "l"; // extra small is a quarter of small; small 1x1, wide 2x1, tall 1x2, large 2x2
 export interface HomeTile {
   kind: "product" | "group";
   id: string; // product id, or the category name

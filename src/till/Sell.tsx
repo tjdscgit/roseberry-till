@@ -26,6 +26,7 @@ const CATEGORY_ORDER = ["Salad Greens", "Cooking Greens", "Roots", "Brassica", "
 const tilePrices = (p: Product) => p.options.map((o) => (o.unit === "kg" ? optionPrice(o) : `${o.label} ${price(o.price)}`)).join(" · ");
 
 const SIZES: { id: TileSize; label: string }[] = [
+  { id: "xs", label: "Extra small" },
   { id: "s", label: "Small" },
   { id: "w", label: "Wide" },
   { id: "t", label: "Tall" },
@@ -191,7 +192,7 @@ export function Sell({ products, lines, canCard, cardLabel, onTap, onQty, onRemo
         )}
 
         {onHome ? (
-          <div className={`grid${editing ? " editing" : ""}`}>
+          <div className={`grid home${editing ? " editing" : ""}`}>
             {home.map((t, i) => {
               const cls = `tile size-${t.size}${editing && picked === i ? " picked" : ""}`;
               const tap = () => (editing ? setPicked(picked === i ? null : i) : t.kind === "group" ? setCat(t.id) : onTap(byId.get(t.id)!));
