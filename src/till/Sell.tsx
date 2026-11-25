@@ -34,7 +34,7 @@ const SIZES: { id: TileSize; label: string }[] = [
 
 // Until the front page is edited: every group, then every product.
 const defaultHome = (cats: string[], products: Product[]): HomeTile[] => [
-  ...cats.map((c) => ({ kind: "group" as const, id: c, size: "w" as TileSize })),
+  ...cats.map((c) => ({ kind: "group" as const, id: c, size: "s" as TileSize })),
   ...products.map((p) => ({ kind: "product" as const, id: p.id, size: "s" as TileSize })),
 ];
 
@@ -161,7 +161,7 @@ export function Sell({ products, lines, canCard, cardLabel, onTap, onQty, onRemo
                   value=""
                   onChange={(e) => {
                     const m = missing.find((x) => `${x.kind}:${x.id}` === e.target.value);
-                    if (m) setHome([...home, { kind: m.kind, id: m.id, size: m.kind === "group" ? "w" : "s" }]);
+                    if (m) setHome([...home, { kind: m.kind, id: m.id, size: "s" }]);
                   }}
                 >
                   <option value="">+ Add a tile…</option>

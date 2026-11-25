@@ -112,7 +112,7 @@ export interface HomeTile {
   id: string; // product id, or the category name
   size: TileSize;
 }
-const HOME_KEY = "roseberry-till.home.v1";
+const HOME_KEY = "roseberry-till.home.v2";
 export const loadHome = () => read<HomeTile[] | null>(HOME_KEY, null);
 export const saveHome = (tiles: HomeTile[] | null) => {
   if (tiles) write(HOME_KEY, tiles);
