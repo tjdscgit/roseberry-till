@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Line, Product } from "./types";
 import { kg, money, optionPrice, price } from "./money";
 import { basketTotal, itemCount } from "./basket";
-import { Close, Minus, Plus, Search } from "./Icons";
+import { Back, Close, Minus, Plus, Search } from "./Icons";
 import { Photo } from "./Photo";
 import { loadHome, saveHome, type HomeTile, type TileSize } from "./storage";
 
@@ -69,6 +69,18 @@ export function Sell({ products, lines, canCard, cardLabel, onTap, onQty, onRemo
     saveHome(tiles);
   };
   const onHome = !query && cat === "All";
+  // Half-size cells, always an even number of columns, so small tiles (2 cells wide) fill each row.
+  const homeRef = useRef<HTMLDivElement>(null);
+  const [cols, setCols] = useState(8);
+  useEffect(() => {
+    const el = homeRef.current;
+    if (!el) return;
+    const fit = () => setCols(Math.max(2, 2 * Math.floor((el.clientWidth + 12) / 180)));
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [onHome]);
   const groupCount = (g: string) => products.filter((p) => p.category === g).length;
   const missing = [
     ...groups.filter((g) => !home.some((t) => t.kind === "group" && t.id === g)).map((g) => ({ kind: "group" as const, id: g, name: g })),
@@ -96,6 +108,18 @@ export function Sell({ products, lines, canCard, cardLabel, onTap, onQty, onRemo
     <div className="sell">
       <main>
         <div className="toolbar">
+          {!onHome && (
+            <button
+              className="icon-btn back-home"
+              aria-label="Back to front page"
+              onClick={() => {
+                setCat("All");
+                setQuery("");
+              }}
+            >
+              <Back size={24} />
+            </button>
+          )}
           <label className="search">
             <Search size={20} color="#4A5550" />
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search" aria-label="Search produce" />
@@ -119,17 +143,6 @@ export function Sell({ products, lines, canCard, cardLabel, onTap, onQty, onRemo
               </button>
             ))}
           </nav>
-          {onHome && (
-            <button
-              className={`pill edit-toggle${editing ? " on" : ""}`}
-              onClick={() => {
-                setEditing(!editing);
-                setPicked(null);
-              }}
-            >
-              {editing ? "Done" : "Edit"}
-            </button>
-          )}
         </div>
 
         {onHome && editing && (
@@ -153,6 +166,7 @@ export function Sell({ products, lines, canCard, cardLabel, onTap, onQty, onRemo
                 <button className="pill danger" onClick={() => removeTile(picked)}>
                   Remove
                 </button>
+                <button className="pill on" onClick={() => { setEditing(false); setPicked(null); }}>Done</button>
               </>
             ) : (
               <>
@@ -186,13 +200,14 @@ export function Sell({ products, lines, canCard, cardLabel, onTap, onQty, onRemo
                 >
                   Reset
                 </button>
+                <button className="pill on" onClick={() => { setEditing(false); setPicked(null); }}>Done</button>
               </>
             )}
           </div>
         )}
 
         {onHome ? (
-          <div className={`grid home${editing ? " editing" : ""}`}>
+          <div ref={homeRef} style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }} className={`grid home${editing ? " editing" : ""}`}>
             {home.map((t, i) => {
               const cls = `tile size-${t.size}${editing && picked === i ? " picked" : ""}`;
               const tap = () => (editing ? setPicked(picked === i ? null : i) : t.kind === "group" ? setCat(t.id) : onTap(byId.get(t.id)!));
@@ -214,7 +229,12 @@ export function Sell({ products, lines, canCard, cardLabel, onTap, onQty, onRemo
                 </button>
               );
             })}
-            {!home.length && <div className="nothing">Front page is empty. Tap Edit to add tiles.</div>}
+            {!home.length && <div className="nothing">Front page is empty. Tap Edit front page to add tiles.</div>}
+            {!editing && (
+              <button className="edit-home" onClick={() => setEditing(true)}>
+                Edit front page
+              </button>
+            )}
           </div>
         ) : (
         <div className="grid">

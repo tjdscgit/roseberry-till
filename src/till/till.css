@@ -305,15 +305,16 @@ h1, h2, p { margin: 0; }
 .pill.date input { font: inherit; font-size: 16px; border: 0; background: transparent; color: inherit; }
 
 /* Editable front page */
-.edit-toggle { margin-left: auto; }
+.back-home { width: 48px; height: 48px; flex-shrink: 0; border-radius: 12px; border: 2px solid var(--line-strong); background: #fff; display: flex; align-items: center; justify-content: center; padding: 0; }
+.edit-home { grid-column: 1 / -1; height: 52px; border-radius: 12px; border: 2px dashed var(--line-strong); background: transparent; font-size: 17px; font-weight: 700; color: var(--muted); }
 .grid { grid-auto-flow: dense; }
 /* The front page uses half-size cells so an extra-small tile is one cell; the rest span more. */
-.grid.home { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); grid-auto-rows: 83px; }
+.grid.home { grid-auto-rows: 83px; }
 .grid.home .tile.size-s { grid-column: span 2; grid-row: span 2; }
 .grid.home .tile.size-w { grid-column: span 4; grid-row: span 2; }
 .grid.home .tile.size-t { grid-column: span 2; grid-row: span 4; }
 .grid.home .tile.size-l { grid-column: span 4; grid-row: span 4; }
-.tile.size-xs { justify-content: center; }
+.tile.size-xs { justify-content: center; align-items: center; }
 .tile.size-xs .photo { display: none; }
 .tile.size-xs .name { padding: 0 8px; font-size: 16px; text-align: center; }
 .tile.size-xs .prices, .tile.size-xs .tag-kg { display: none; }
