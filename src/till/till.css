@@ -303,3 +303,23 @@ h1, h2, p { margin: 0; }
 .periods { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .pill.date { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
 .pill.date input { font: inherit; font-size: 16px; border: 0; background: transparent; color: inherit; }
+
+/* Editable front page */
+.edit-toggle { margin-left: auto; }
+.grid { grid-auto-flow: dense; }
+.tile.size-w { grid-column: span 2; }
+.tile.size-t { grid-row: span 2; }
+.tile.size-l { grid-column: span 2; grid-row: span 2; }
+.tile.size-t .photo, .tile.size-l .photo { height: auto; flex-grow: 1; font-size: 60px; }
+.tile.size-l .name { font-size: 26px; }
+.tile.group { border-color: var(--line-strong); }
+.tile.group .name { font-size: 22px; }
+.grid.editing .tile { border-style: dashed; }
+.grid.editing .tile:active { transform: none; }
+.tile.picked { border: 3px solid var(--ink) !important; box-shadow: 0 0 0 3px var(--go-soft); }
+.edit-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 12px; background: var(--panel); border: 2px solid var(--line); }
+.edit-what { font-size: 17px; font-weight: 700; margin-right: auto; }
+.seg-sizes { display: flex; gap: 6px; }
+.add-select { height: 48px; padding: 0 12px; border-radius: 24px; border: 2px solid var(--line-strong); font: inherit; font-size: 17px; font-weight: 700; background: #fff; }
+.pill:disabled { opacity: 0.4; }
+.pill.danger { color: var(--red-ink); border-color: var(--red-line); }

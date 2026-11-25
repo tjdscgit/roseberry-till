@@ -104,3 +104,23 @@ export function appendLog(kind: LogEntry["kind"], method: string, data?: unknown
 }
 
 export const loadLog = () => read<LogEntry[]>(LOG_KEY, []);
+
+// The front page: an ordered list of tiles, each a product or a veg group, with a size.
+export type TileSize = "s" | "w" | "t" | "l"; // small 1x1, wide 2x1, tall 1x2, large 2x2
+export interface HomeTile {
+  kind: "product" | "group";
+  id: string; // product id, or the category name
+  size: TileSize;
+}
+const HOME_KEY = "roseberry-till.home.v1";
+export const loadHome = () => read<HomeTile[] | null>(HOME_KEY, null);
+export const saveHome = (tiles: HomeTile[] | null) => {
+  if (tiles) write(HOME_KEY, tiles);
+  else {
+    try {
+      localStorage.removeItem(HOME_KEY);
+    } catch {
+      // ignore
+    }
+  }
+};
