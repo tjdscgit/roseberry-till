@@ -6,7 +6,7 @@ import { Products } from "./Products";
 import { SalesList } from "./SalesList";
 import { money } from "./money";
 import { addEach, addWeight, basketTotal, changeQty, removeLine, summarise } from "./basket";
-import { deviceId, isMine, isToday, useSales } from "./storage";
+import { deviceId, isMine, isToday, useSales, useSync } from "./storage";
 import { newReference, usePayments } from "./payments";
 import { Back, WifiOff } from "./Icons";
 import { Sell } from "./Sell";
@@ -55,6 +55,7 @@ export default function App() {
   const { sales, upsert, replace, get, all, nextNumber } = useSales(user);
   const pay = usePayments({ upsert, get, all });
   const online = useOnline();
+  const sync = useSync();
   useWakeLock();
   const { products: allProducts } = useProducts(user);
   const products = useMemo(() => allProducts.filter((p) => !p.hidden && p.options.length), [allProducts]);
@@ -142,6 +143,13 @@ export default function App() {
     screen.name === "sell" ? (
       <header className="topbar">
         <h1>Roseberry Till</h1>
+        {sync.error ? (
+          <button className="btn-light" onClick={() => alert(sync.error)}>
+            <span className="chip"><span className="dot bad" />Sync problem</span>
+          </button>
+        ) : sync.waiting > 0 ? (
+          <span className="chip"><span className="dot warn" />{sync.waiting} sale{sync.waiting === 1 ? "" : "s"} not synced yet</span>
+        ) : null}
         {checking > 0 && (
           <span className="chip">
             <span className="dot warn" />

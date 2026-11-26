@@ -9,8 +9,7 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if request.auth != null
         && request.resource.data.name is string
-        && request.resource.data.options is list
-        && request.resource.size() < 900000;
+        && request.resource.data.options is list;
     }
 
     // Sales are never deleted from the till except test-sale clean-up, so delete stays allowed.
@@ -20,8 +19,7 @@ service cloud.firestore {
         && request.resource.data.id == saleId
         && request.resource.data.createdAt is string
         && request.resource.data.total is int
-        && request.resource.data.lines is list
-        && request.resource.size() < 200000;
+        && request.resource.data.lines is list;
     }
 
     // Shared settings: card fee and front page layout.

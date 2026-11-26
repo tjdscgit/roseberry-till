@@ -44,9 +44,37 @@ export const deviceId: string = (() => {
 // Sales made before sync existed have no device; they were made on this iPad.
 export const isMine = (s: Sale) => !s.device || s.device === deviceId;
 
+// Sync status for the header: sales written here that Firebase hasn't confirmed, and the last
+// refusal. A write only confirms once it reaches Firebase, so offline sales show as waiting.
+export interface SyncState { waiting: number; error?: string }
+let sync: SyncState = { waiting: 0 };
+const waiting = new Set<string>();
+const listeners = new Set<(s: SyncState) => void>();
+const setSync = (patch: Partial<SyncState>) => {
+  sync = { ...sync, waiting: waiting.size, ...patch };
+  listeners.forEach((l) => l(sync));
+};
+export function useSync() {
+  const [s, set] = useState(sync);
+  useEffect(() => {
+    listeners.add(set);
+    return () => void listeners.delete(set);
+  }, []);
+  return s;
+}
+export const syncFailed = (what: string, e: unknown) => {
+  appendLog("info", "sync-error", { what, message: e instanceof Error ? e.message : String(e) });
+  setSync({ error: `${what}: ${e instanceof Error ? e.message : String(e)}` });
+};
+
 const upload = (s: Sale) => {
   if (s.test || !s.device) return; // test sales, and sales from before sync, stay on this iPad
-  putSale({ ...s, device: s.device ?? deviceId }).catch(() => {});
+  waiting.add(s.id);
+  setSync({});
+  putSale(s).then(
+    () => { waiting.delete(s.id); setSync({ error: undefined }); },
+    (e) => { waiting.delete(s.id); syncFailed("Sale not saved online", e); }
+  );
 };
 
 export interface Settings {
@@ -58,7 +86,7 @@ function useShared<T>(name: string, key: string, fallback: T): [T, (v: T) => voi
   const [value, setValue] = useState<T>(() => read<T>(key, fallback));
   useEffect(
     () =>
-      watchConfig<T>(name, (v) => {
+      watchConfig<T>(name, (e) => syncFailed("Can't load " + name, e), (v) => {
         const next = v ?? fallback;
         write(key, next);
         setValue(next);
@@ -70,7 +98,7 @@ function useShared<T>(name: string, key: string, fallback: T): [T, (v: T) => voi
     (v: T) => {
       write(key, v);
       setValue(v);
-      putConfig(name, v).catch(() => {});
+      putConfig(name, v).catch((e) => syncFailed(name === "home" ? "Front page not saved online" : "Settings not saved online", e));
     },
     [name, key]
   );
@@ -98,7 +126,7 @@ export function useSales(user: User | null | undefined) {
   // offline copy of the rest. Sales from before sync started are not uploaded.
   useEffect(() => {
     if (!user) return;
-    return watchSales((remote) => {
+    return watchSales((e) => syncFailed("Can't load sales", e), (remote) => {
       const mine = ref.current.filter((s) => (isMine(s) && local(s)) || s.test);
       const have = new Set(mine.map((s) => s.id));
       ref.current = [...mine, ...remote.filter((s) => !have.has(s.id))].sort(byTime);

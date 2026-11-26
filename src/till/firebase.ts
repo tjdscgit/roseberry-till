@@ -81,7 +81,7 @@ export const putSale = (s: Sale) => setDoc(doc(salesCol, s.id), { ...s, syncedAt
 export const removeSale = (id: string) => deleteDoc(doc(salesCol, id));
 
 // Every till's sales, all time, live.
-export function watchSales(onList: (list: Sale[]) => void) {
+export function watchSales(onError: (e: Error) => void, onList: (list: Sale[]) => void) {
   return onSnapshot(
     salesCol,
     (snap) =>
@@ -91,17 +91,17 @@ export function watchSales(onList: (list: Sale[]) => void) {
           return sale as Sale;
         })
       ),
-    () => {}
+    onError
   );
 }
 
 // Shared settings (card fee, front page layout): one document each in "config", under `value`.
 export const putConfig = (name: string, value: unknown) => setDoc(doc(db, "config", name), { value, updatedAt: serverTimestamp() });
 
-export function watchConfig<T>(name: string, onValue: (value: T | null) => void) {
+export function watchConfig<T>(name: string, onError: (e: Error) => void, onValue: (value: T | null) => void) {
   return onSnapshot(
     doc(db, "config", name),
     (snap) => snap.exists() && !snap.metadata.hasPendingWrites && onValue((snap.data().value ?? null) as T | null),
-    () => {}
+    onError
   );
 }
