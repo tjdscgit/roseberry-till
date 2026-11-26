@@ -1,11 +1,17 @@
-import { useCallback, useRef, useState } from "react";
-import type { Sale } from "./types";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { User } from "firebase/auth";
+import { putConfig, putSale, removeSale, watchConfig, watchSales } from "./firebase";
 
-// localStorage is the till's record until online sync arrives. Every access is wrapped: in a
-// private window or with blocked storage the till still works for the session, from memory.
+import type { CashBook, Sale } from "./types";
+
+// localStorage is this iPad's own record, written synchronously so nothing is lost if the page
+// dies mid-payment. Sales and shared settings are also copied to Firebase, so every till sees
+// them. Every access is wrapped: in a private window or with blocked storage the till still
+// works for the session, from memory.
 const SALES_KEY = "roseberry-till.sales.v1";
 const SETTINGS_KEY = "roseberry-till.settings.v1";
 const LOG_KEY = "roseberry-till.log.v1";
+const REMOVED_KEY = "roseberry-till.removed.v1";
 const KEEP_DAYS = 60;
 const KEEP_LOG = 1000;
 
@@ -26,18 +32,179 @@ function write(key: string, value: unknown) {
   }
 }
 
+// A random name for this iPad, made once. Sales carry it so each till only chases its own card
+// payments with its own terminal.
+const DEVICE_KEY = "roseberry-till.device.v1";
+export const deviceId: string = (() => {
+  const existing = read<string | null>(DEVICE_KEY, null);
+  if (existing) return existing;
+  const id = crypto.randomUUID().slice(0, 8);
+  write(DEVICE_KEY, id);
+  return id;
+})();
+
+// Sales made before sync existed have no device; they were made on this iPad.
+export const isMine = (s: Sale) => !s.device || s.device === deviceId;
+
+// Sync status for the header: sales written here that Firebase hasn't confirmed, and the last
+// refusal. A write only confirms once it reaches Firebase, so offline sales show as waiting.
+export interface SyncState { waiting: number; error?: string }
+let sync: SyncState = { waiting: 0 };
+const waiting = new Set<string>();
+const listeners = new Set<(s: SyncState) => void>();
+const setSync = (patch: Partial<SyncState>) => {
+  sync = { ...sync, waiting: waiting.size, ...patch };
+  listeners.forEach((l) => l(sync));
+};
+export function useSync() {
+  const [s, set] = useState(sync);
+  useEffect(() => {
+    listeners.add(set);
+    return () => void listeners.delete(set);
+  }, []);
+  return s;
+}
+export const syncFailed = (what: string, e: unknown) => {
+  appendLog("info", "sync-error", { what, message: e instanceof Error ? e.message : String(e) });
+  setSync({ error: `${what}: ${e instanceof Error ? e.message : String(e)}` });
+};
+
+const upload = (s: Sale) => {
+  if (s.test || !s.device) return; // test sales, and sales from before sync, stay on this iPad
+  waiting.add(s.id);
+  setSync({});
+  putSale(s).then(
+    () => { waiting.delete(s.id); setSync({ error: undefined }); },
+    (e) => { waiting.delete(s.id); syncFailed("Sale not saved online", e); }
+  );
+};
+
 export interface Settings {
   feeRate?: number; // Zeller card fee, percent
+  float?: number; // usual cash float, cents
 }
 
-export const loadSettings = () => read<Settings>(SETTINGS_KEY, {});
-export const saveSettings = (s: Settings) => write(SETTINGS_KEY, s);
+// A setting shared by every till: kept on the iPad for offline starts, synced through Firebase.
+// `adopt` runs once per device, on the first answer from Firebase: it may fold in what only
+// this device had (returning the combined value, which is then uploaded) or return null to take
+// Firebase's as it is. If Firebase has nothing yet, this device's value is uploaded.
+// Every screen using the same setting hears a change straight away, without waiting for Firebase.
+const sameKey = new Map<string, Set<(v: unknown) => void>>();
+const tell = (key: string, v: unknown) => sameKey.get(key)?.forEach((l) => l(v));
+
+function useShared<T>(name: string, key: string, fallback: T, adopt?: (mine: T, shared: T) => T | null): [T, (v: T) => void] {
+  const [value, setValue] = useState<T>(() => read<T>(key, fallback));
+  useEffect(() => {
+    const l = (v: unknown) => setValue(v as T);
+    if (!sameKey.has(key)) sameKey.set(key, new Set());
+    sameKey.get(key)!.add(l);
+    return () => void sameKey.get(key)!.delete(l);
+  }, [key]);
+  useEffect(() => {
+    const doneKey = `${key}.adopted`;
+    const upload = (v: T) => putConfig(name, v).catch((e) => syncFailed(`${name} not saved online`, e));
+    return watchConfig<T>(
+      name,
+      (e) => syncFailed("Can't load " + name, e),
+      (v) => {
+        let next = v ?? fallback;
+        if (adopt && !read(doneKey, false)) {
+          write(doneKey, true);
+          const merged = adopt(read<T>(key, fallback), next);
+          if (merged !== null) {
+            next = merged;
+            upload(merged);
+          }
+        }
+        write(key, next);
+        tell(key, next);
+      },
+      () => {
+        write(doneKey, true);
+        const mine = read<T>(key, fallback);
+        if (JSON.stringify(mine) !== JSON.stringify(fallback)) upload(mine);
+      }
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name, key]);
+  const set = useCallback(
+    (v: T) => {
+      write(key, v);
+      tell(key, v);
+      putConfig(name, v).catch((e) => syncFailed(name === "home" ? "Front page not saved online" : name === "cash" ? "Cash count not saved online" : "Settings not saved online", e));
+    },
+    [name, key]
+  );
+  return [value, set];
+}
+
+export const useSettings = () => useShared<Settings>("settings", SETTINGS_KEY, {});
 
 export const isToday = (iso: string) => new Date(iso).toDateString() === new Date().toDateString();
 
-export function useSales() {
-  const ref = useRef<Sale[]>(read<Sale[]>(SALES_KEY, []));
+// What this iPad keeps in localStorage: its own sales from the last KEEP_DAYS, plus any card
+// payment still unsettled, plus test sales.
+const local = (s: Sale) => s.test || (isMine(s) && (Date.parse(s.createdAt) >= Date.now() - KEEP_DAYS * 86400000 || s.status !== "complete"));
+const persist = (list: Sale[]) => write(SALES_KEY, list.filter(local));
+
+const byTime = (a: Sale, b: Sale) => a.createdAt.localeCompare(b.createdAt);
+
+// An entry in the removed list is a sale id, or "from/to" (two ISO times): every sale rung up
+// in that span, including ones that only ever lived on one iPad.
+const isRemoved = (list: Set<string>, s: Sale) => {
+  if (list.has(s.id)) return true;
+  for (const e of list) {
+    const [from, to] = e.split("/");
+    if (to && s.createdAt >= from && s.createdAt < to) return true;
+  }
+  return false;
+};
+
+const retried = new Set<string>();
+
+export function useSales(user: User | null | undefined) {
+  const ref = useRef<Sale[]>(read<Sale[]>(SALES_KEY, []).filter((s) => !isRemoved(new Set(read<string[]>(REMOVED_KEY, [])), s)));
   const [sales, setSales] = useState(ref.current);
+
+  // Signed in: follow every till's sales, all time. This iPad's own copy of its own recent sales
+  // always wins; everything else comes from Firebase, which also brings back a lost iPad's
+  // history. Only this iPad's own recent sales are kept in localStorage; Firebase keeps its own
+  // offline copy of the rest. Sales from before sync started are not uploaded.
+  useEffect(() => {
+    if (!user) return;
+    return watchSales((e) => syncFailed("Can't load sales", e), (remote) => {
+      const mine = ref.current.filter((s) => (isMine(s) && local(s)) || s.test);
+      const have = new Set(mine.map((s) => s.id));
+      ref.current = [...mine, ...remote.filter((s) => !have.has(s.id))].filter((s) => !isRemoved(removed.current, s)).sort(byTime);
+      setSales(ref.current);
+      // This iPad's sales that Firebase doesn't have (refused, e.g. by the rules at the time):
+      // send them again, once per opening of the till, so a refusal can't strand them here.
+      const there = new Set(remote.map((s) => s.id));
+      for (const s of ref.current) {
+        if (isMine(s) && !there.has(s.id) && !retried.has(s.id) && !waiting.has(s.id)) {
+          retried.add(s.id);
+          upload(s);
+        }
+      }
+    });
+  }, [user]);
+
+  // Sales removed on purpose (test sales rung up as real ones), listed by id in config/removed.
+  // Every till drops them from its own copy and from Firebase, so they can't come back.
+  const removed = useRef<Set<string>>(new Set(read<string[]>(REMOVED_KEY, [])));
+  useEffect(() => {
+    if (!user) return;
+    return watchConfig<string[]>("removed", (e) => syncFailed("Can't load removed sales", e), (ids) => {
+      removed.current = new Set(ids ?? []);
+      write(REMOVED_KEY, [...removed.current]);
+      const gone = ref.current.filter((s) => isRemoved(removed.current, s));
+      if (!gone.length) return;
+      for (const s of gone) removeSale(s.id).catch(() => {});
+      ref.current = ref.current.filter((s) => !isRemoved(removed.current, s));
+      persist(ref.current);
+      setSales(ref.current);
+    });
+  }, [user]);
 
   // Memory is the source of truth; storage is written through on every change, synchronously,
   // so a sale is on disk before a payment starts.
@@ -47,10 +214,20 @@ export function useSales() {
     if (i >= 0) list[i] = { ...list[i], ...patch };
     else if (base) list.push({ ...base, ...patch });
     else return;
-    const cutoff = Date.now() - KEEP_DAYS * 86400000;
-    ref.current = list.filter((s) => Date.parse(s.createdAt) >= cutoff || s.status !== "complete");
-    write(SALES_KEY, ref.current);
+    ref.current = list;
+    persist(list);
     setSales(ref.current);
+    const saved = ref.current.find((s) => s.id === id);
+    if (saved) upload(saved);
+  }, []);
+
+  // Swaps the whole list at once (loading or removing test sales).
+  const replace = useCallback((list: Sale[]) => {
+    const keep = new Set(list.map((s) => s.id));
+    for (const s of ref.current) if (!keep.has(s.id) && !s.test) removeSale(s.id).catch(() => {});
+    ref.current = list;
+    persist(list);
+    setSales(list);
   }, []);
 
   const get = useCallback((id: string) => ref.current.find((s) => s.id === id), []);
@@ -61,7 +238,7 @@ export function useSales() {
     []
   );
 
-  return { sales, upsert, get, all, nextNumber };
+  return { sales, upsert, replace, get, all, nextNumber };
 }
 
 // Diagnostic log of every payment call, kept on the iPad and downloadable from Reports.
@@ -97,3 +274,37 @@ export function appendLog(kind: LogEntry["kind"], method: string, data?: unknown
 }
 
 export const loadLog = () => read<LogEntry[]>(LOG_KEY, []);
+
+// The front page: an ordered list of tiles, each a product or a veg group, with a size.
+export type TileSize = "xs" | "s" | "w" | "t" | "l"; // extra small is a quarter of small; small 1x1, wide 2x1, tall 1x2, large 2x2
+export interface HomeTile {
+  kind: "product" | "group";
+  id: string; // product id, or the category name
+  size: TileSize;
+  photo?: string; // group tiles only; a shrunk data URL
+}
+const HOME_KEY = "roseberry-till.home.v2";
+// null means the default layout (all groups, all produce).
+// Group photos used to live only on the device they were added on. On a device's first sync,
+// any photo it has for a group tile that the shared layout has no photo for is added and shared.
+const adoptPhotos = (mine: HomeTile[] | null, shared: HomeTile[] | null): HomeTile[] | null => {
+  if (!mine) return null;
+  const photos = new Map(mine.filter((t) => t.photo).map((t) => [`${t.kind}:${t.id}`, t.photo!]));
+  if (!photos.size) return null;
+  if (!shared) return mine; // shared is the default layout; this device's own layout carries the photos
+  let added = false;
+  const merged = shared.map((t) => {
+    const p = photos.get(`${t.kind}:${t.id}`);
+    if (p && !t.photo) {
+      added = true;
+      return { ...t, photo: p };
+    }
+    return t;
+  });
+  return added ? merged : null;
+};
+export const useHome = () => useShared<HomeTile[] | null>("home", HOME_KEY, null, adoptPhotos);
+
+// Paid-outs and cash counts, shared by every till (one cash tin).
+const CASH_KEY = "roseberry-till.cash.v1";
+export const useCash = () => useShared<CashBook>("cash", CASH_KEY, { payouts: [], closes: [] });

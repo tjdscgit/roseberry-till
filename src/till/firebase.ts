@@ -3,6 +3,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, type User } from "firebase/auth";
 import {
   collection,
+  deleteDoc,
   doc,
   initializeFirestore,
   onSnapshot,
@@ -13,7 +14,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import catalogue from "./catalogue.json";
-import type { Product } from "./types";
+import type { Product, Sale } from "./types";
 
 // These settings identify the Firebase project and are meant to be public. What protects the
 // data is the sign-in plus the database rules in firestore.rules.
@@ -71,4 +72,41 @@ export function useProducts(user: User | null | undefined) {
 // Writes go to the iPad first and upload when online, so saving works offline too.
 export function saveProduct(p: Product) {
   return setDoc(doc(products, p.id), { ...p, updatedAt: serverTimestamp() });
+}
+
+// Sales, one document each. Like products, writes land on the iPad first and upload when online.
+const salesCol = collection(db, "sales");
+
+export const putSale = (s: Sale) => setDoc(doc(salesCol, s.id), { ...s, syncedAt: serverTimestamp() });
+export const removeSale = (id: string) => deleteDoc(doc(salesCol, id));
+
+// Every till's sales, all time, live.
+export function watchSales(onError: (e: Error) => void, onList: (list: Sale[]) => void) {
+  return onSnapshot(
+    salesCol,
+    (snap) =>
+      onList(
+        snap.docs.map((d) => {
+          const { syncedAt: _, ...sale } = d.data();
+          return sale as Sale;
+        })
+      ),
+    onError
+  );
+}
+
+// Shared settings (card fee, front page layout): one document each in "config", under `value`.
+export const putConfig = (name: string, value: unknown) => setDoc(doc(db, "config", name), { value, updatedAt: serverTimestamp() });
+
+// onMissing: Firebase confirmed there is no such setting yet.
+export function watchConfig<T>(name: string, onError: (e: Error) => void, onValue: (value: T | null) => void, onMissing?: () => void) {
+  return onSnapshot(
+    doc(db, "config", name),
+    (snap) => {
+      if (snap.metadata.hasPendingWrites) return;
+      if (snap.exists()) onValue((snap.data().value ?? null) as T | null);
+      else if (!snap.metadata.fromCache) onMissing?.();
+    },
+    onError
+  );
 }

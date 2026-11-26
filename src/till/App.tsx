@@ -3,9 +3,10 @@ import type { Line, Option, Product, Sale } from "./types";
 import { signOutTill, useProducts, useUser } from "./firebase";
 import { SignIn } from "./SignIn";
 import { Products } from "./Products";
+import { SalesList } from "./SalesList";
 import { money } from "./money";
 import { addEach, addWeight, basketTotal, changeQty, removeLine, summarise } from "./basket";
-import { isToday, useSales } from "./storage";
+import { deviceId, isMine, isToday, useSales, useSync } from "./storage";
 import { newReference, usePayments } from "./payments";
 import { Back, WifiOff } from "./Icons";
 import { Sell } from "./Sell";
@@ -19,7 +20,8 @@ type Screen =
   | { name: "card"; saleId: string }
   | { name: "done"; saleId: string }
   | { name: "reports" }
-  | { name: "products" };
+  | { name: "products" }
+  | { name: "sales" };
 
 function useOnline() {
   const [online, setOnline] = useState(navigator.onLine);
@@ -49,11 +51,12 @@ function useWakeLock() {
 }
 
 export default function App() {
-  const { sales, upsert, get, all, nextNumber } = useSales();
+  const user = useUser();
+  const { sales, upsert, replace, get, all, nextNumber } = useSales(user);
   const pay = usePayments({ upsert, get, all });
   const online = useOnline();
+  const sync = useSync();
   useWakeLock();
-  const user = useUser();
   const { products: allProducts } = useProducts(user);
   const products = useMemo(() => allProducts.filter((p) => !p.hidden && p.options.length), [allProducts]);
 
@@ -75,8 +78,8 @@ export default function App() {
           : "Card unavailable";
 
   // Card sales moved off screen while being checked, whose outcome still needs to be seen.
-  const settled = sales.filter((s) => s.setAside && !s.acknowledged && (s.status === "complete" || s.status === "card_failed" || s.status === "not_charged"));
-  const checking = sales.filter((s) => s.setAside && (s.status === "card_unknown" || s.status === "card_pending")).length;
+  const settled = sales.filter((s) => isMine(s) && s.setAside && !s.acknowledged && (s.status === "complete" || s.status === "card_failed" || s.status === "not_charged"));
+  const checking = sales.filter((s) => isMine(s) && s.setAside && (s.status === "card_unknown" || s.status === "card_pending")).length;
 
   const tap = (p: Product) => {
     // One way to sell it, sold by count: straight into the basket.
@@ -94,6 +97,7 @@ export default function App() {
       total,
       method: "card",
       status: "card_pending",
+      device: deviceId,
       card: { reference: newReference() },
     };
     upsert(id, {}, sale); // saved before Zeller is asked, so a crash can be recovered
@@ -111,6 +115,7 @@ export default function App() {
       total,
       method: "cash",
       status: "complete",
+      device: deviceId,
       cash: { tendered, change: tendered - total },
     });
     setLines([]);
@@ -138,6 +143,13 @@ export default function App() {
     screen.name === "sell" ? (
       <header className="topbar">
         <h1>Roseberry Till</h1>
+        {sync.error ? (
+          <button className="btn-light" onClick={() => alert(sync.error)}>
+            <span className="chip"><span className="dot bad" />Sync problem</span>
+          </button>
+        ) : sync.waiting > 0 ? (
+          <span className="chip"><span className="dot warn" />{sync.waiting} sale{sync.waiting === 1 ? "" : "s"} not synced yet</span>
+        ) : null}
         {checking > 0 && (
           <span className="chip">
             <span className="dot warn" />
@@ -170,6 +182,9 @@ export default function App() {
           </button>
         )}
         <span className="chip">{online ? "Online" : <strong style={{ color: "#FBBF24" }}>Offline</strong>}</span>
+        <button className="btn-light" onClick={() => setScreen({ name: "sales" })}>
+          Sales
+        </button>
         <button className="btn-light" onClick={() => setScreen({ name: "products" })}>
           Products
         </button>
@@ -179,7 +194,7 @@ export default function App() {
       </header>
     ) : (
       <header className="topbar">
-        {(screen.name === "cash" || screen.name === "reports" || screen.name === "products") && (
+        {(screen.name === "cash" || screen.name === "reports" || screen.name === "products" || screen.name === "sales") && (
           <button className="btn-back" onClick={toSell}>
             <Back /> {screen.name === "cash" ? "Back to basket" : "Back to till"}
           </button>
@@ -188,8 +203,9 @@ export default function App() {
           {screen.name === "cash" && "Cash payment"}
           {screen.name === "card" && "Card payment"}
           {screen.name === "done" && `Sale ${get(screen.saleId)?.number ?? ""}`}
-          {screen.name === "reports" && `Today · ${new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "short" })}`}
+          {screen.name === "reports" && "Report"}
           {screen.name === "products" && "Products"}
+          {screen.name === "sales" && "Sales"}
         </h1>
         {screen.name === "products" && (
           <button
@@ -287,9 +303,11 @@ export default function App() {
 
       {screen.name === "done" && get(screen.saleId) && <Done sale={get(screen.saleId)!} onNext={toSell} />}
 
-      {screen.name === "reports" && <Reports sales={sales} />}
+      {screen.name === "reports" && <Reports sales={sales} onReplace={replace} />}
 
       {screen.name === "products" && <Products products={allProducts} />}
+
+      {screen.name === "sales" && <SalesList sales={sales} />}
 
       {picking && (
         <OptionDialog

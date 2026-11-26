@@ -4,10 +4,10 @@ import { resolve } from "node:path";
 
 // Pages: the till at the root, the customer receipt (from the QR code) at receipt.html,
 // and the Zeller test page at test.html.
-export default defineConfig(({ command }) => ({
+export default defineConfig(() => ({
   plugins: [react()],
-  // GitHub Pages needs /roseberry-till/; Firebase Hosting serves from the root (BASE_PATH=/).
-  base: command === "build" ? (process.env.BASE_PATH ?? "/roseberry-till/") : "/",
+  // Firebase Hosting serves from the root.
+  base: "/",
   build: {
     rollupOptions: {
       input: {

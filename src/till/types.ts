@@ -55,4 +55,41 @@ export interface Sale {
   // Card sale moved off the screen while still being checked; its outcome must be shown later.
   setAside?: boolean;
   acknowledged?: boolean;
+  // Which till took it (see deviceId in storage.ts). Only that till chases its card result.
+  device?: string;
+  // Made-up sale loaded for testing; can be removed in one go from the report screen.
+  test?: boolean;
+}
+
+// Cash taken out of the tin (helper wages, buying change), against a market day (YYYY-MM-DD).
+export interface Payout {
+  id: string;
+  day: string;
+  amount: number; // cents
+  note: string;
+  at: string;
+}
+
+// A cash count for one or more market days (several when two markets' cash ended up together).
+export interface DayClose {
+  id: string;
+  days: string[];
+  float: number; // what was in the tin before the market
+  cashSales: number;
+  payouts: number;
+  expected: number; // float + cash sales - paid out
+  counted: number;
+  coins?: Record<string, number>; // denomination in cents -> how many, when counted that way
+  card: number;
+  cardCount: number;
+  keep: number; // left in the tin as the next float
+  banked: number; // counted - keep
+  note?: string;
+  countedAt: string;
+  device: string;
+}
+
+export interface CashBook {
+  payouts: Payout[];
+  closes: DayClose[];
 }
