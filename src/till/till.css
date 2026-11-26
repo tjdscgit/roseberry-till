@@ -301,8 +301,17 @@ h1, h2, p { margin: 0; }
 
 /* Report period picker */
 .periods { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-.pill.date { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
-.pill.date input { font: inherit; font-size: 16px; border: 0; background: transparent; color: inherit; }
+.calendar { align-self: flex-start; width: min(420px, 100%); background: #fff; border: 2px solid var(--line); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; font-size: 19px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-grid .wd { text-align: center; font-size: 14px; color: var(--muted); font-weight: 700; }
+.cal-grid .day { position: relative; height: 48px; border: 0; border-radius: 10px; background: transparent; font-size: 18px; font-weight: 600; color: inherit; }
+.cal-grid .day:disabled { opacity: 0.3; }
+.cal-grid .day.now { outline: 2px solid var(--line); }
+.cal-grid .day.in { background: var(--line); }
+.cal-grid .day.end { background: var(--ink); color: #fff; }
+.cal-grid .day.has::after { content: ""; position: absolute; bottom: 6px; left: 50%; width: 6px; height: 6px; margin-left: -3px; border-radius: 3px; background: var(--go); }
+.cal-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 15px; }
 
 /* Editable front page */
 .back-home { width: 48px; height: 48px; flex-shrink: 0; border-radius: 12px; border: 2px solid var(--line-strong); background: #fff; display: flex; align-items: center; justify-content: center; padding: 0; }

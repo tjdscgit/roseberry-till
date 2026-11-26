@@ -5,7 +5,7 @@ import { basketTotal, itemCount } from "./basket";
 import { Back, Close, Minus, Plus, Search } from "./Icons";
 import { Photo } from "./Photo";
 import { shrinkPhoto } from "./Products";
-import { loadHome, saveHome, type HomeTile, type TileSize } from "./storage";
+import { useHome, type HomeTile, type TileSize } from "./storage";
 
 interface Props {
   products: Product[];
@@ -47,7 +47,7 @@ export function Sell({ products, lines, canCard, cardLabel, onTap, onQty, onRemo
   const [query, setQuery] = useState("");
   const [cat, setCat] = useState("All");
   const [editing, setEditing] = useState(false);
-  const [saved, setSaved] = useState(loadHome);
+  const [saved, setSaved] = useHome();
   const [picked, setPicked] = useState<number | null>(null);
   const groupPhoto = useRef<HTMLInputElement>(null);
 
@@ -68,7 +68,6 @@ export function Sell({ products, lines, canCard, cardLabel, onTap, onQty, onRemo
   }, [saved, groups, products]);
   const setHome = (tiles: HomeTile[]) => {
     setSaved(tiles);
-    saveHome(tiles);
   };
   const onHome = !query && cat === "All";
   // Half-size cells, always an even number of columns, so small tiles (2 cells wide) fill each row.
@@ -224,7 +223,6 @@ export function Sell({ products, lines, canCard, cardLabel, onTap, onQty, onRemo
                   onClick={() => {
                     if (confirm("Put the front page back to all groups and all produce?")) {
                       setSaved(null);
-                      saveHome(null);
                     }
                   }}
                 >

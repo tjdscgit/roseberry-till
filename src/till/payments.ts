@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTerminal } from "@zeller-public/payments-sdk-react";
 import type { TerminalTransaction } from "@zeller-public/payments-sdk-react";
 import type { Sale, SaleStatus } from "./types";
-import { appendLog } from "./storage";
+import { appendLog, isMine } from "./storage";
 
 // Card payments through the Zeller SDK. Same rules the test page proved on the iPad:
 // the sale is saved before purchase() starts, uncertain outcomes become card_unknown and are
@@ -204,7 +204,7 @@ export function usePayments({ upsert, get, all }: Store) {
     async (only?: string) => {
       if (recovering.current || busyRef.current || purchaseRef.current) return;
       const open = all().filter(
-        (s) => (s.status === "card_pending" || s.status === "card_unknown") && (!only || s.id === only)
+        (s) => isMine(s) && (s.status === "card_pending" || s.status === "card_unknown") && (!only || s.id === only)
       );
       if (!open.length) return;
       recovering.current = true;
@@ -242,7 +242,7 @@ export function usePayments({ upsert, get, all }: Store) {
   useEffect(() => {
     if (didInit.current) return;
     didInit.current = true;
-    for (const s of all()) if (s.status === "card_pending") upsert(s.id, { status: "card_unknown", setAside: true });
+    for (const s of all()) if (isMine(s) && s.status === "card_pending") upsert(s.id, { status: "card_unknown", setAside: true });
     (async () => {
       await checkTerminal();
       await recover();

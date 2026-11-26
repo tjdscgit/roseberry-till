@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Sale } from "./types";
 import { money } from "./money";
 import { salesCsv, summarise } from "./basket";
-import { loadLog, loadSettings, saveSettings } from "./storage";
+import { loadLog, useSettings } from "./storage";
 import { ReceiptQr } from "./ReceiptQr";
 
 function download(name: string, text: string, type: string) {
@@ -17,18 +17,23 @@ const dayStart = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(
 const addDays = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-type PeriodId = "today" | "yesterday" | "week" | "lastweek" | "month" | "all" | "day";
-const PERIODS: { id: Exclude<PeriodId, "day">; label: string }[] = [
+type PeriodId = "today" | "yesterday" | "week" | "lastweek" | "month" | "all" | "custom";
+const PERIODS: { id: Exclude<PeriodId, "custom">; label: string }[] = [
   { id: "today", label: "Today" },
   { id: "yesterday", label: "Yesterday" },
   { id: "week", label: "This week" },
   { id: "lastweek", label: "Last week" },
   { id: "month", label: "This month" },
-  { id: "all", label: "Last 60 days" },
+  { id: "all", label: "All time" },
 ];
 
 // From (inclusive) and to (exclusive) for a period; weeks start on Monday.
-function range(id: PeriodId, day: string): [Date, Date] {
+const parse = (v: string) => {
+  const [y, m, d] = v.split("-").map(Number);
+  return new Date(y, m - 1, d);
+};
+
+function range(id: PeriodId, pick: [string, string]): [Date, Date] {
   const today = dayStart(new Date());
   const monday = addDays(today, -((today.getDay() + 6) % 7));
   switch (id) {
@@ -37,14 +42,52 @@ function range(id: PeriodId, day: string): [Date, Date] {
     case "week": return [monday, addDays(today, 1)];
     case "lastweek": return [addDays(monday, -7), monday];
     case "month": return [new Date(today.getFullYear(), today.getMonth(), 1), addDays(today, 1)];
-    case "all": return [addDays(today, -60), addDays(today, 1)];
-    case "day": {
-      const [y, m, d] = day.split("-").map(Number);
-      const from = new Date(y, m - 1, d);
-      return [from, addDays(from, 1)];
-    }
+    case "all": return [new Date(2000, 0, 1), addDays(today, 1)];
+    case "custom": return [parse(pick[0]), addDays(parse(pick[1]), 1)];
   }
 }
+const short = (d: Date) => d.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" });
+const WEEKDAYS = ["M", "T", "W", "T", "F", "S", "S"];
+
+// A month calendar. Tap a day for that day; tap a second day to make it a period. Days with
+// sales are marked.
+function Calendar({ pick, salesDays, onPick, onClose }: { pick: [string, string]; salesDays: Set<string>; onPick: (p: [string, string]) => void; onClose: () => void }) {
+  const [month, setMonth] = useState(() => { const d = parse(pick[1]); return new Date(d.getFullYear(), d.getMonth(), 1); });
+  const [first, setFirst] = useState<string | null>(null);
+  const todayYmd = ymd(new Date());
+  const lead = (month.getDay() + 6) % 7;
+  const count = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+  const days = [...Array(lead).fill(null), ...Array.from({ length: count }, (_, i) => new Date(month.getFullYear(), month.getMonth(), i + 1))];
+  const [a, b] = first ? [first, first] : pick;
+  const tap = (v: string) => {
+    if (!first) { setFirst(v); onPick([v, v]); return; }
+    onPick(v < first ? [v, first] : [first, v]);
+    setFirst(null);
+  };
+  return (
+    <div className="calendar" role="dialog" aria-label="Pick dates">
+      <div className="cal-head">
+        <button className="pill" aria-label="Previous month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}>‹</button>
+        <strong>{month.toLocaleDateString("en-AU", { month: "long", year: "numeric" })}</strong>
+        <button className="pill" aria-label="Next month" disabled={ymd(new Date(month.getFullYear(), month.getMonth() + 1, 1)) > todayYmd} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}>›</button>
+      </div>
+      <div className="cal-grid">
+        {WEEKDAYS.map((w, i) => <span key={i} className="wd">{w}</span>)}
+        {days.map((d, i) => {
+          if (!d) return <span key={i} />;
+          const v = ymd(d);
+          const cls = ["day", v >= a && v <= b ? "in" : "", v === a || v === b ? "end" : "", salesDays.has(v) ? "has" : "", v === todayYmd ? "now" : ""].join(" ");
+          return <button key={i} className={cls} disabled={v > todayYmd} onClick={() => tap(v)}>{d.getDate()}</button>;
+        })}
+      </div>
+      <div className="cal-foot">
+        <span>{first ? "Tap an end day, or Done for one day" : "Tap a day, then another for a period"}</span>
+        <button className="pill on" onClick={() => { setFirst(null); onClose(); }}>Done</button>
+      </div>
+    </div>
+  );
+}
+
 const timeOf = (s: Sale) => new Date(s.createdAt).toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" });
 
 const STATUS_TEXT: Record<string, string> = {
@@ -68,17 +111,26 @@ export function Reports({ sales, onReplace }: { sales: Sale[]; onReplace: (list:
   };
 
   const [period, setPeriod] = useState<PeriodId>("today");
-  const [day, setDay] = useState(() => ymd(new Date()));
-  const [from, to] = range(period, day);
-  const label = period === "day" ? new Date(from).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" }) : PERIODS.find((p) => p.id === period)!.label;
-  const fileStamp = period === "today" || period === "yesterday" || period === "day" ? ymd(from) : `${ymd(from)}-to-${ymd(addDays(to, -1))}`;
+  const [pick, setPick] = useState<[string, string]>(() => [ymd(new Date()), ymd(new Date())]);
+  const [calOpen, setCalOpen] = useState(false);
+  const salesDays = useMemo(() => new Set(sales.filter((s) => s.status === "complete").map((s) => ymd(new Date(s.createdAt)))), [sales]);
+  const [from, to] = range(period, pick);
+  const oneDay = ymd(from) === ymd(addDays(to, -1));
+  const customLabel = oneDay ? short(from) : `${short(from)} – ${short(addDays(to, -1))}`;
+  const label = period === "custom" ? customLabel : PERIODS.find((p) => p.id === period)!.label;
+  const fileStamp = period === "all" ? "all-time" : oneDay ? ymd(from) : `${ymd(from)}-to-${ymd(addDays(to, -1))}`;
   const today = useMemo(
     () => sales.filter((s) => { const t = new Date(s.createdAt); return t >= from && t < to; }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [sales, from.getTime(), to.getTime()]
   );
   const sum = useMemo(() => summarise(today), [today]);
-  const [feeRate, setFeeRate] = useState(() => loadSettings().feeRate?.toString() ?? "");
+  const [settings, setSettings] = useSettings();
+  const [feeRate, setFeeRate] = useState(() => settings.feeRate?.toString() ?? "");
+  // Another till changed the fee: show it, unless this box already says the same number.
+  useEffect(() => {
+    setFeeRate((v) => (Number(v) === (settings.feeRate ?? 0) ? v : settings.feeRate?.toString() ?? ""));
+  }, [settings.feeRate]);
   const rate = Number(feeRate);
   const fees = rate > 0 ? Math.round((sum.card * rate) / 100) : null;
   const cardPct = sum.gross ? Math.round((sum.card / sum.gross) * 100) : 0;
@@ -89,7 +141,7 @@ export function Reports({ sales, onReplace }: { sales: Sale[]; onReplace: (list:
   const saveRate = (v: string) => {
     setFeeRate(v);
     const n = Number(v);
-    saveSettings({ ...loadSettings(), feeRate: n > 0 ? n : undefined });
+    setSettings({ ...settings, feeRate: n > 0 ? n : undefined });
   };
 
   return (
@@ -100,11 +152,18 @@ export function Reports({ sales, onReplace }: { sales: Sale[]; onReplace: (list:
             {p.label}
           </button>
         ))}
-        <label className={`pill date${period === "day" ? " on" : ""}`}>
-          Pick a day
-          <input type="date" value={day} max={ymd(new Date())} aria-label="Pick a day" onChange={(e) => { if (e.target.value) { setDay(e.target.value); setPeriod("day"); } }} />
-        </label>
+        <button className={`pill${period === "custom" ? " on" : ""}`} aria-expanded={calOpen} onClick={() => setCalOpen((o) => !o)}>
+          {period === "custom" ? customLabel : "Pick dates"}
+        </button>
       </div>
+      {calOpen && (
+        <Calendar
+          pick={pick}
+          salesDays={salesDays}
+          onPick={(p) => { setPick(p); setPeriod("custom"); }}
+          onClose={() => setCalOpen(false)}
+        />
+      )}
       <div className="tiles">
         <div className="stat dark">
           <span className="label">Gross sales</span>

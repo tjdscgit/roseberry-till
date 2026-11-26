@@ -6,7 +6,7 @@ import { Products } from "./Products";
 import { SalesList } from "./SalesList";
 import { money } from "./money";
 import { addEach, addWeight, basketTotal, changeQty, removeLine, summarise } from "./basket";
-import { isToday, useSales } from "./storage";
+import { deviceId, isMine, isToday, useSales } from "./storage";
 import { newReference, usePayments } from "./payments";
 import { Back, WifiOff } from "./Icons";
 import { Sell } from "./Sell";
@@ -51,11 +51,11 @@ function useWakeLock() {
 }
 
 export default function App() {
-  const { sales, upsert, replace, get, all, nextNumber } = useSales();
+  const user = useUser();
+  const { sales, upsert, replace, get, all, nextNumber } = useSales(user);
   const pay = usePayments({ upsert, get, all });
   const online = useOnline();
   useWakeLock();
-  const user = useUser();
   const { products: allProducts } = useProducts(user);
   const products = useMemo(() => allProducts.filter((p) => !p.hidden && p.options.length), [allProducts]);
 
@@ -77,8 +77,8 @@ export default function App() {
           : "Card unavailable";
 
   // Card sales moved off screen while being checked, whose outcome still needs to be seen.
-  const settled = sales.filter((s) => s.setAside && !s.acknowledged && (s.status === "complete" || s.status === "card_failed" || s.status === "not_charged"));
-  const checking = sales.filter((s) => s.setAside && (s.status === "card_unknown" || s.status === "card_pending")).length;
+  const settled = sales.filter((s) => isMine(s) && s.setAside && !s.acknowledged && (s.status === "complete" || s.status === "card_failed" || s.status === "not_charged"));
+  const checking = sales.filter((s) => isMine(s) && s.setAside && (s.status === "card_unknown" || s.status === "card_pending")).length;
 
   const tap = (p: Product) => {
     // One way to sell it, sold by count: straight into the basket.
@@ -96,6 +96,7 @@ export default function App() {
       total,
       method: "card",
       status: "card_pending",
+      device: deviceId,
       card: { reference: newReference() },
     };
     upsert(id, {}, sale); // saved before Zeller is asked, so a crash can be recovered
@@ -113,6 +114,7 @@ export default function App() {
       total,
       method: "cash",
       status: "complete",
+      device: deviceId,
       cash: { tendered, change: tendered - total },
     });
     setLines([]);

@@ -13,6 +13,23 @@ service cloud.firestore {
         && request.resource.size() < 900000;
     }
 
+    // Sales are never deleted from the till except test-sale clean-up, so delete stays allowed.
+    match /sales/{saleId} {
+      allow read, delete: if request.auth != null;
+      allow write: if request.auth != null
+        && request.resource.data.id == saleId
+        && request.resource.data.createdAt is string
+        && request.resource.data.total is int
+        && request.resource.data.lines is list
+        && request.resource.size() < 200000;
+    }
+
+    // Shared settings: card fee and front page layout.
+    match /config/{name} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && name in ['settings', 'home'];
+    }
+
     // Everything else is closed until it is deliberately opened.
     match /{document=**} {
       allow read, write: if false;
