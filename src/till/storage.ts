@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { User } from "firebase/auth";
 import { putConfig, putSale, removeSale, watchConfig, watchSales } from "./firebase";
 
-import type { CashBook, Sale } from "./types";
+import type { CashBook, HeldSale, Sale } from "./types";
 
 // localStorage is this iPad's own record, written synchronously so nothing is lost if the page
 // dies mid-payment. Sales and shared settings are also copied to Firebase, so every till sees
@@ -304,6 +304,17 @@ const adoptPhotos = (mine: HomeTile[] | null, shared: HomeTile[] | null): HomeTi
   return added ? merged : null;
 };
 export const useHome = () => useShared<HomeTile[] | null>("home", HOME_KEY, null, adoptPhotos);
+
+// Baskets on hold. This iPad only: the customer comes back to the same till.
+const HELD_KEY = "roseberry-till.held.v1";
+export function useHeld() {
+  const [held, setHeld] = useState<HeldSale[]>(() => read<HeldSale[]>(HELD_KEY, []));
+  const save = useCallback((list: HeldSale[]) => {
+    write(HELD_KEY, list);
+    setHeld(list);
+  }, []);
+  return [held, save] as const;
+}
 
 // Paid-outs and cash counts, shared by every till (one cash tin).
 const CASH_KEY = "roseberry-till.cash.v1";
