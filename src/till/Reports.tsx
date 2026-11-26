@@ -166,7 +166,7 @@ export function Reports({ sales, onReplace }: { sales: Sale[]; onReplace: (list:
             ? `Cash not counted: ${notCounted.slice(0, 3).map(dayLabel).join(", ")}${notCounted.length > 3 ? ` and ${notCounted.length - 3} more` : ""}`
             : "All market days counted"}
         </span>
-        <button className={notCounted.length ? "btn-go small" : "btn-plain small"} onClick={() => setClosing(true)}>
+        <button className="pill" onClick={() => setClosing(true)}>
           {notCounted.length ? "Count cash" : "Cash counts"}
         </button>
       </div>

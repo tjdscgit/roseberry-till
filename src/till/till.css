@@ -342,13 +342,13 @@ h1, h2, p { margin: 0; }
 .pill.danger { color: var(--red-ink); border-color: var(--red-line); }
 
 /* Cash count */
+.count-bar { display: flex; align-items: center; gap: 12px; font-size: 16px; color: var(--muted); }
+.count-bar.due { color: var(--amber-ink); }
+.count-bar .grow { flex-grow: 1; }
+.count-bar .pill { height: 44px; font-size: 16px; }
 .close-wrap { flex-grow: 1; min-height: 0; display: flex; flex-direction: column; }
 .close-back { padding: 16px 24px 0; }
 .close-back .btn-plain.small { min-height: 52px; font-size: 18px; padding: 0 18px; }
-.count-bar { display: flex; align-items: center; gap: 16px; padding: 12px 16px 12px 20px; border-radius: 16px; border: 2px solid var(--line); font-size: 19px; font-weight: 700; }
-.count-bar.due { background: var(--amber-bg); border-color: var(--amber-line); color: var(--amber-ink); }
-.count-bar .grow, .close-day .grow { flex-grow: 1; }
-.count-bar .btn-go.small, .count-bar .btn-plain.small { min-height: 56px; font-size: 20px; }
 .close-day .pad { padding: 0 20px 16px; }
 .close-day .periods { flex-wrap: wrap; }
 .close-day .grow-col { flex: 1.3 1 0; min-width: 0; }
