@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import type { Sale } from "./types";
 import { money } from "./money";
 import { salesCsv, summarise } from "./basket";
-import { loadLog, useSettings } from "./storage";
+import { loadLog, useCash, useSettings } from "./storage";
+import { CloseDay, dayLabel, uncounted } from "./CloseDay";
 import { ReceiptQr } from "./ReceiptQr";
 
 function download(name: string, text: string, type: string) {
@@ -137,6 +138,9 @@ export function Reports({ sales, onReplace }: { sales: Sale[]; onReplace: (list:
   const open = today.filter((s) => s.method === "card" && s.status !== "complete" && s.status !== "card_failed");
   const recent = useMemo(() => today.filter((s) => s.status === "complete").slice(-15).reverse(), [today]);
   const [receiptFor, setReceiptFor] = useState<Sale | null>(null);
+  const [book] = useCash();
+  const notCounted = useMemo(() => uncounted(sales, book), [sales, book]);
+  const [closing, setClosing] = useState(false);
 
   const saveRate = (v: string) => {
     setFeeRate(v);
@@ -144,8 +148,28 @@ export function Reports({ sales, onReplace }: { sales: Sale[]; onReplace: (list:
     setSettings({ ...settings, feeRate: n > 0 ? n : undefined });
   };
 
+  if (closing)
+    return (
+      <div className="close-wrap">
+        <div className="close-back">
+          <button className="btn-plain small" onClick={() => setClosing(false)}>← Back to report</button>
+        </div>
+        <CloseDay sales={sales} onDone={() => setClosing(false)} />
+      </div>
+    );
+
   return (
     <div className="reports">
+      <div className={`count-bar${notCounted.length ? " due" : ""}`}>
+        <span className="grow">
+          {notCounted.length
+            ? `Cash not counted: ${notCounted.slice(0, 3).map(dayLabel).join(", ")}${notCounted.length > 3 ? ` and ${notCounted.length - 3} more` : ""}`
+            : "All market days counted"}
+        </span>
+        <button className={notCounted.length ? "btn-go small" : "btn-plain small"} onClick={() => setClosing(true)}>
+          {notCounted.length ? "Count cash" : "Cash counts"}
+        </button>
+      </div>
       <div className="periods" role="radiogroup" aria-label="Period">
         {PERIODS.map((p) => (
           <button key={p.id} role="radio" aria-checked={period === p.id} className={`pill${period === p.id ? " on" : ""}`} onClick={() => setPeriod(p.id)}>

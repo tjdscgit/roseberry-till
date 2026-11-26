@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { User } from "firebase/auth";
 import { putConfig, putSale, removeSale, watchConfig, watchSales } from "./firebase";
-import type { Sale } from "./types";
+import type { CashBook, Sale } from "./types";
 
 // localStorage is this iPad's own record, written synchronously so nothing is lost if the page
 // dies mid-payment. Sales and shared settings are also copied to Firebase, so every till sees
@@ -79,14 +79,25 @@ const upload = (s: Sale) => {
 
 export interface Settings {
   feeRate?: number; // Zeller card fee, percent
+  float?: number; // usual cash float, cents
 }
 
 // A setting shared by every till: kept on the iPad for offline starts, synced through Firebase.
 // `adopt` runs once per device, on the first answer from Firebase: it may fold in what only
 // this device had (returning the combined value, which is then uploaded) or return null to take
 // Firebase's as it is. If Firebase has nothing yet, this device's value is uploaded.
+// Every screen using the same setting hears a change straight away, without waiting for Firebase.
+const sameKey = new Map<string, Set<(v: unknown) => void>>();
+const tell = (key: string, v: unknown) => sameKey.get(key)?.forEach((l) => l(v));
+
 function useShared<T>(name: string, key: string, fallback: T, adopt?: (mine: T, shared: T) => T | null): [T, (v: T) => void] {
   const [value, setValue] = useState<T>(() => read<T>(key, fallback));
+  useEffect(() => {
+    const l = (v: unknown) => setValue(v as T);
+    if (!sameKey.has(key)) sameKey.set(key, new Set());
+    sameKey.get(key)!.add(l);
+    return () => void sameKey.get(key)!.delete(l);
+  }, [key]);
   useEffect(() => {
     const doneKey = `${key}.adopted`;
     const upload = (v: T) => putConfig(name, v).catch((e) => syncFailed(`${name} not saved online`, e));
@@ -104,7 +115,7 @@ function useShared<T>(name: string, key: string, fallback: T, adopt?: (mine: T, 
           }
         }
         write(key, next);
-        setValue(next);
+        tell(key, next);
       },
       () => {
         write(doneKey, true);
@@ -117,8 +128,8 @@ function useShared<T>(name: string, key: string, fallback: T, adopt?: (mine: T, 
   const set = useCallback(
     (v: T) => {
       write(key, v);
-      setValue(v);
-      putConfig(name, v).catch((e) => syncFailed(name === "home" ? "Front page not saved online" : "Settings not saved online", e));
+      tell(key, v);
+      putConfig(name, v).catch((e) => syncFailed(name === "home" ? "Front page not saved online" : name === "cash" ? "Cash count not saved online" : "Settings not saved online", e));
     },
     [name, key]
   );
@@ -252,3 +263,7 @@ const adoptPhotos = (mine: HomeTile[] | null, shared: HomeTile[] | null): HomeTi
   return added ? merged : null;
 };
 export const useHome = () => useShared<HomeTile[] | null>("home", HOME_KEY, null, adoptPhotos);
+
+// Paid-outs and cash counts, shared by every till (one cash tin).
+const CASH_KEY = "roseberry-till.cash.v1";
+export const useCash = () => useShared<CashBook>("cash", CASH_KEY, { payouts: [], closes: [] });

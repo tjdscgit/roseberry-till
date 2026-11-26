@@ -22,10 +22,10 @@ service cloud.firestore {
         && request.resource.data.lines is list;
     }
 
-    // Shared settings: card fee and front page layout.
+    // Shared settings: card fee, front page layout, cash counts.
     match /config/{name} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && name in ['settings', 'home'];
+      allow write: if request.auth != null && name in ['settings', 'home', 'cash'];
     }
 
     // Everything else is closed until it is deliberately opened.
