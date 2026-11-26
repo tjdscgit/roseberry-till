@@ -160,6 +160,8 @@ const isRemoved = (list: Set<string>, s: Sale) => {
   return false;
 };
 
+const retried = new Set<string>();
+
 export function useSales(user: User | null | undefined) {
   const ref = useRef<Sale[]>(read<Sale[]>(SALES_KEY, []).filter((s) => !isRemoved(new Set(read<string[]>(REMOVED_KEY, [])), s)));
   const [sales, setSales] = useState(ref.current);
@@ -175,6 +177,15 @@ export function useSales(user: User | null | undefined) {
       const have = new Set(mine.map((s) => s.id));
       ref.current = [...mine, ...remote.filter((s) => !have.has(s.id))].filter((s) => !isRemoved(removed.current, s)).sort(byTime);
       setSales(ref.current);
+      // This iPad's sales that Firebase doesn't have (refused, e.g. by the rules at the time):
+      // send them again, once per opening of the till, so a refusal can't strand them here.
+      const there = new Set(remote.map((s) => s.id));
+      for (const s of ref.current) {
+        if (isMine(s) && !there.has(s.id) && !retried.has(s.id) && !waiting.has(s.id)) {
+          retried.add(s.id);
+          upload(s);
+        }
+      }
     });
   }, [user]);
 
