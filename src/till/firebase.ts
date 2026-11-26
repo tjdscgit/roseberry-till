@@ -98,10 +98,15 @@ export function watchSales(onError: (e: Error) => void, onList: (list: Sale[]) =
 // Shared settings (card fee, front page layout): one document each in "config", under `value`.
 export const putConfig = (name: string, value: unknown) => setDoc(doc(db, "config", name), { value, updatedAt: serverTimestamp() });
 
-export function watchConfig<T>(name: string, onError: (e: Error) => void, onValue: (value: T | null) => void) {
+// onMissing: Firebase confirmed there is no such setting yet.
+export function watchConfig<T>(name: string, onError: (e: Error) => void, onValue: (value: T | null) => void, onMissing?: () => void) {
   return onSnapshot(
     doc(db, "config", name),
-    (snap) => snap.exists() && !snap.metadata.hasPendingWrites && onValue((snap.data().value ?? null) as T | null),
+    (snap) => {
+      if (snap.metadata.hasPendingWrites) return;
+      if (snap.exists()) onValue((snap.data().value ?? null) as T | null);
+      else if (!snap.metadata.fromCache) onMissing?.();
+    },
     onError
   );
 }

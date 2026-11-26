@@ -82,18 +82,38 @@ export interface Settings {
 }
 
 // A setting shared by every till: kept on the iPad for offline starts, synced through Firebase.
-function useShared<T>(name: string, key: string, fallback: T): [T, (v: T) => void] {
+// `adopt` runs once per device, on the first answer from Firebase: it may fold in what only
+// this device had (returning the combined value, which is then uploaded) or return null to take
+// Firebase's as it is. If Firebase has nothing yet, this device's value is uploaded.
+function useShared<T>(name: string, key: string, fallback: T, adopt?: (mine: T, shared: T) => T | null): [T, (v: T) => void] {
   const [value, setValue] = useState<T>(() => read<T>(key, fallback));
-  useEffect(
-    () =>
-      watchConfig<T>(name, (e) => syncFailed("Can't load " + name, e), (v) => {
-        const next = v ?? fallback;
+  useEffect(() => {
+    const doneKey = `${key}.adopted`;
+    const upload = (v: T) => putConfig(name, v).catch((e) => syncFailed(`${name} not saved online`, e));
+    return watchConfig<T>(
+      name,
+      (e) => syncFailed("Can't load " + name, e),
+      (v) => {
+        let next = v ?? fallback;
+        if (adopt && !read(doneKey, false)) {
+          write(doneKey, true);
+          const merged = adopt(read<T>(key, fallback), next);
+          if (merged !== null) {
+            next = merged;
+            upload(merged);
+          }
+        }
         write(key, next);
         setValue(next);
-      }),
+      },
+      () => {
+        write(doneKey, true);
+        const mine = read<T>(key, fallback);
+        if (JSON.stringify(mine) !== JSON.stringify(fallback)) upload(mine);
+      }
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [name, key]
-  );
+  }, [name, key]);
   const set = useCallback(
     (v: T) => {
       write(key, v);
@@ -213,4 +233,22 @@ export interface HomeTile {
 }
 const HOME_KEY = "roseberry-till.home.v2";
 // null means the default layout (all groups, all produce).
-export const useHome = () => useShared<HomeTile[] | null>("home", HOME_KEY, null);
+// Group photos used to live only on the device they were added on. On a device's first sync,
+// any photo it has for a group tile that the shared layout has no photo for is added and shared.
+const adoptPhotos = (mine: HomeTile[] | null, shared: HomeTile[] | null): HomeTile[] | null => {
+  if (!mine) return null;
+  const photos = new Map(mine.filter((t) => t.photo).map((t) => [`${t.kind}:${t.id}`, t.photo!]));
+  if (!photos.size) return null;
+  if (!shared) return mine; // shared is the default layout; this device's own layout carries the photos
+  let added = false;
+  const merged = shared.map((t) => {
+    const p = photos.get(`${t.kind}:${t.id}`);
+    if (p && !t.photo) {
+      added = true;
+      return { ...t, photo: p };
+    }
+    return t;
+  });
+  return added ? merged : null;
+};
+export const useHome = () => useShared<HomeTile[] | null>("home", HOME_KEY, null, adoptPhotos);
