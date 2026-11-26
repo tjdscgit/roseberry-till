@@ -149,8 +149,19 @@ const persist = (list: Sale[]) => write(SALES_KEY, list.filter(local));
 
 const byTime = (a: Sale, b: Sale) => a.createdAt.localeCompare(b.createdAt);
 
+// An entry in the removed list is a sale id, or "from/to" (two ISO times): every sale rung up
+// in that span, including ones that only ever lived on one iPad.
+const isRemoved = (list: Set<string>, s: Sale) => {
+  if (list.has(s.id)) return true;
+  for (const e of list) {
+    const [from, to] = e.split("/");
+    if (to && s.createdAt >= from && s.createdAt < to) return true;
+  }
+  return false;
+};
+
 export function useSales(user: User | null | undefined) {
-  const ref = useRef<Sale[]>(read<Sale[]>(SALES_KEY, []).filter((s) => !read<string[]>(REMOVED_KEY, []).includes(s.id)));
+  const ref = useRef<Sale[]>(read<Sale[]>(SALES_KEY, []).filter((s) => !isRemoved(new Set(read<string[]>(REMOVED_KEY, [])), s)));
   const [sales, setSales] = useState(ref.current);
 
   // Signed in: follow every till's sales, all time. This iPad's own copy of its own recent sales
@@ -162,7 +173,7 @@ export function useSales(user: User | null | undefined) {
     return watchSales((e) => syncFailed("Can't load sales", e), (remote) => {
       const mine = ref.current.filter((s) => (isMine(s) && local(s)) || s.test);
       const have = new Set(mine.map((s) => s.id));
-      ref.current = [...mine, ...remote.filter((s) => !have.has(s.id))].filter((s) => !removed.current.has(s.id)).sort(byTime);
+      ref.current = [...mine, ...remote.filter((s) => !have.has(s.id))].filter((s) => !isRemoved(removed.current, s)).sort(byTime);
       setSales(ref.current);
     });
   }, [user]);
@@ -175,10 +186,10 @@ export function useSales(user: User | null | undefined) {
     return watchConfig<string[]>("removed", (e) => syncFailed("Can't load removed sales", e), (ids) => {
       removed.current = new Set(ids ?? []);
       write(REMOVED_KEY, [...removed.current]);
-      const gone = ref.current.filter((s) => removed.current.has(s.id));
+      const gone = ref.current.filter((s) => isRemoved(removed.current, s));
       if (!gone.length) return;
       for (const s of gone) removeSale(s.id).catch(() => {});
-      ref.current = ref.current.filter((s) => !removed.current.has(s.id));
+      ref.current = ref.current.filter((s) => !isRemoved(removed.current, s));
       persist(ref.current);
       setSales(ref.current);
     });
