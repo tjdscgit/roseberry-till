@@ -4,6 +4,7 @@ import { kg, money, optionPrice, price } from "./money";
 import { basketTotal, itemCount } from "./basket";
 import { Back, Close, Minus, Plus, Search } from "./Icons";
 import { Photo } from "./Photo";
+import { shrinkPhoto } from "./Products";
 import { loadHome, saveHome, type HomeTile, type TileSize } from "./storage";
 
 interface Props {
@@ -48,6 +49,7 @@ export function Sell({ products, lines, canCard, cardLabel, onTap, onQty, onRemo
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(loadHome);
   const [picked, setPicked] = useState<number | null>(null);
+  const groupPhoto = useRef<HTMLInputElement>(null);
 
   const cats = useMemo(() => {
     const present = new Set(products.map((p) => p.category));
@@ -163,6 +165,34 @@ export function Sell({ products, lines, canCard, cardLabel, onTap, onQty, onRemo
                 <button className="pill" disabled={picked === home.length - 1} onClick={() => move(picked, picked + 1)}>
                   Later ▶
                 </button>
+                {home[picked].kind === "group" && (
+                  <>
+                    <button className="pill" onClick={() => groupPhoto.current?.click()}>
+                      {home[picked].photo ? "Change photo" : "Add photo"}
+                    </button>
+                    {home[picked].photo && (
+                      <button className="pill" onClick={() => patch(picked, { photo: undefined })}>
+                        No photo
+                      </button>
+                    )}
+                    <input
+                      ref={groupPhoto}
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      onChange={async (e) => {
+                        const f = e.target.files?.[0];
+                        e.target.value = "";
+                        if (!f) return;
+                        try {
+                          patch(picked, { photo: await shrinkPhoto(f) });
+                        } catch {
+                          alert("Couldn't read that photo. Try another.");
+                        }
+                      }}
+                    />
+                  </>
+                )}
                 <button className="pill danger" onClick={() => removeTile(picked)}>
                   Remove
                 </button>
@@ -214,7 +244,7 @@ export function Sell({ products, lines, canCard, cardLabel, onTap, onQty, onRemo
               if (t.kind === "group")
                 return (
                   <button key={`g:${t.id}`} className={`${cls} group`} onClick={tap}>
-                    <Photo product={{ name: t.id, category: t.id }} className="" />
+                    <Photo product={{ name: t.id, category: t.id, photo: t.photo }} className="" />
                     <span className="name">{t.id}</span>
                     <span className="prices">{groupCount(t.id)} items ›</span>
                   </button>

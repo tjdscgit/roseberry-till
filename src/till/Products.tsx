@@ -51,7 +51,7 @@ function newDraft(all: Product[]): Draft {
 }
 
 // Square-crops and shrinks a photo to about 30–60 KB so it fits in the database.
-async function shrinkPhoto(file: File): Promise<string> {
+export async function shrinkPhoto(file: File): Promise<string> {
   const img = await createImageBitmap(file);
   const side = Math.min(img.width, img.height);
   const size = 480;

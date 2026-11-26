@@ -111,6 +111,7 @@ export interface HomeTile {
   kind: "product" | "group";
   id: string; // product id, or the category name
   size: TileSize;
+  photo?: string; // group tiles only; a shrunk data URL
 }
 const HOME_KEY = "roseberry-till.home.v2";
 export const loadHome = () => read<HomeTile[] | null>(HOME_KEY, null);
