@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { User } from "firebase/auth";
 import { putConfig, putSale, removeSale, watchConfig, watchSales } from "./firebase";
+
 import type { CashBook, Sale } from "./types";
 
 // localStorage is this iPad's own record, written synchronously so nothing is lost if the page
@@ -10,6 +11,7 @@ import type { CashBook, Sale } from "./types";
 const SALES_KEY = "roseberry-till.sales.v1";
 const SETTINGS_KEY = "roseberry-till.settings.v1";
 const LOG_KEY = "roseberry-till.log.v1";
+const REMOVED_KEY = "roseberry-till.removed.v1";
 const KEEP_DAYS = 60;
 const KEEP_LOG = 1000;
 
@@ -148,7 +150,7 @@ const persist = (list: Sale[]) => write(SALES_KEY, list.filter(local));
 const byTime = (a: Sale, b: Sale) => a.createdAt.localeCompare(b.createdAt);
 
 export function useSales(user: User | null | undefined) {
-  const ref = useRef<Sale[]>(read<Sale[]>(SALES_KEY, []));
+  const ref = useRef<Sale[]>(read<Sale[]>(SALES_KEY, []).filter((s) => !read<string[]>(REMOVED_KEY, []).includes(s.id)));
   const [sales, setSales] = useState(ref.current);
 
   // Signed in: follow every till's sales, all time. This iPad's own copy of its own recent sales
@@ -160,7 +162,24 @@ export function useSales(user: User | null | undefined) {
     return watchSales((e) => syncFailed("Can't load sales", e), (remote) => {
       const mine = ref.current.filter((s) => (isMine(s) && local(s)) || s.test);
       const have = new Set(mine.map((s) => s.id));
-      ref.current = [...mine, ...remote.filter((s) => !have.has(s.id))].sort(byTime);
+      ref.current = [...mine, ...remote.filter((s) => !have.has(s.id))].filter((s) => !removed.current.has(s.id)).sort(byTime);
+      setSales(ref.current);
+    });
+  }, [user]);
+
+  // Sales removed on purpose (test sales rung up as real ones), listed by id in config/removed.
+  // Every till drops them from its own copy and from Firebase, so they can't come back.
+  const removed = useRef<Set<string>>(new Set(read<string[]>(REMOVED_KEY, [])));
+  useEffect(() => {
+    if (!user) return;
+    return watchConfig<string[]>("removed", (e) => syncFailed("Can't load removed sales", e), (ids) => {
+      removed.current = new Set(ids ?? []);
+      write(REMOVED_KEY, [...removed.current]);
+      const gone = ref.current.filter((s) => removed.current.has(s.id));
+      if (!gone.length) return;
+      for (const s of gone) removeSale(s.id).catch(() => {});
+      ref.current = ref.current.filter((s) => !removed.current.has(s.id));
+      persist(ref.current);
       setSales(ref.current);
     });
   }, [user]);
