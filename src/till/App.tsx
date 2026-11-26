@@ -6,7 +6,7 @@ import { Products } from "./Products";
 import { SalesList } from "./SalesList";
 import { money } from "./money";
 import { addEach, addWeight, basketTotal, changeQty, removeLine, summarise } from "./basket";
-import { deviceId, isMine, isToday, useSales, useSync } from "./storage";
+import { deviceId, isMine, isToday, useHeld, useSales, useSync } from "./storage";
 import { newReference, usePayments } from "./payments";
 import { Back, WifiOff } from "./Icons";
 import { Sell } from "./Sell";
@@ -65,6 +65,20 @@ export default function App() {
   const [picking, setPicking] = useState<Product | null>(null);
 
   const total = basketTotal(lines);
+  const [held, setHeld] = useHeld();
+  const hold = () => {
+    if (!lines.length) return;
+    setHeld([...held, { id: crypto.randomUUID(), lines, at: new Date().toISOString() }]);
+    setLines([]);
+  };
+  // Resuming swaps: whatever is in the basket now goes on hold in its place.
+  const resume = (id: string) => {
+    const h = held.find((x) => x.id === id);
+    if (!h) return;
+    const rest = held.filter((x) => x.id !== id);
+    setHeld(lines.length ? [...rest, { id: crypto.randomUUID(), lines, at: new Date().toISOString() }] : rest);
+    setLines(h.lines);
+  };
   const today = useMemo(() => summarise(sales.filter((s) => isToday(s.createdAt))), [sales]);
   const canCard = online && pay.status === "ready";
   const cardLabel = !online
@@ -282,6 +296,10 @@ export default function App() {
             onClear={() => setLines([])}
             onCard={startCard}
             onCash={() => setScreen({ name: "cash" })}
+            held={held}
+            onHold={hold}
+            onResume={resume}
+            onDropHeld={(id) => setHeld(held.filter((x) => x.id !== id))}
           />
         </>
       )}

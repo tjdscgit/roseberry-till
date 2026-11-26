@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Line, Product } from "./types";
+import type { HeldSale, Line, Product } from "./types";
 import { kg, money, optionPrice, price } from "./money";
 import { basketTotal, itemCount } from "./basket";
 import { Back, Close, Minus, Plus, Search } from "./Icons";
@@ -18,6 +18,10 @@ interface Props {
   onClear: () => void;
   onCard: () => void;
   onCash: () => void;
+  held: HeldSale[];
+  onHold: () => void;
+  onResume: (id: string) => void;
+  onDropHeld: (id: string) => void;
 }
 
 // Category pills in stall order; any new category goes on the end.
@@ -43,7 +47,7 @@ const defaultHome = (cats: string[], products: Product[]): HomeTile[] => [
 const lineDetail = (l: Line) =>
   l.unit === "kg" ? `${kg(l.grams ?? 0)} at ${price(l.unitPrice)}/kg` : `${l.optionLabel} · ${price(l.unitPrice)} each`;
 
-export function Sell({ products, lines, canCard, cardLabel, onTap, onQty, onRemove, onClear, onCard, onCash }: Props) {
+export function Sell({ products, lines, canCard, cardLabel, onTap, onQty, onRemove, onClear, onCard, onCash, held, onHold, onResume, onDropHeld }: Props) {
   const [query, setQuery] = useState("");
   const [cat, setCat] = useState("All");
   const [editing, setEditing] = useState(false);
@@ -283,11 +287,31 @@ export function Sell({ products, lines, canCard, cardLabel, onTap, onQty, onRemo
         <div className="basket-head">
           <h2>{count ? `Basket · ${count} item${count === 1 ? "" : "s"}` : "Basket"}</h2>
           {lines.length > 0 && (
-            <button className="link" onClick={onClear}>
-              Clear
-            </button>
+            <>
+              <button className="link" onClick={onHold}>
+                Hold
+              </button>
+              <button className="link" onClick={onClear}>
+                Clear
+              </button>
+            </>
           )}
         </div>
+        {held.length > 0 && (
+          <div className="held" aria-label="Sales on hold">
+            {held.map((h) => (
+              <div key={h.id} className="held-item">
+                <button className="held-resume" onClick={() => onResume(h.id)}>
+                  <span>On hold · {new Date(h.at).toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" })}</span>
+                  <strong className="num">{money(basketTotal(h.lines))}</strong>
+                </button>
+                <button className="icon-btn" aria-label="Throw away this held sale" onClick={() => confirm(`Throw away the held sale of ${money(basketTotal(h.lines))}?`) && onDropHeld(h.id)}>
+                  <Close size={18} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         {lines.length ? (
           <ul className="lines">
             {lines.map((l) => {

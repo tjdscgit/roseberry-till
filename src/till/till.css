@@ -367,3 +367,9 @@ h1, h2, p { margin: 0; }
 .close-day .diff { padding: 10px 14px; border-radius: 12px; font-size: 24px; font-weight: 700; text-align: center; }
 .close-day .diff.ok { background: #dcfce7; color: var(--go); }
 .close-day .diff.off { background: var(--amber-bg); color: var(--amber-ink); border: 2px solid var(--amber-line); }
+
+/* Sales on hold */
+.basket-head .link + .link { margin-left: 16px; }
+.held { display: flex; flex-direction: column; gap: 8px; padding: 4px 20px 8px; }
+.held-item { display: flex; align-items: center; gap: 8px; }
+.held-resume { flex-grow: 1; display: flex; justify-content: space-between; align-items: center; min-height: 52px; padding: 0 14px; border-radius: 12px; border: 2px dashed var(--amber-line); background: var(--amber-bg); color: var(--amber-ink); font-size: 17px; font-weight: 700; }

@@ -62,6 +62,13 @@ export interface Sale {
 }
 
 // Cash taken out of the tin (helper wages, buying change), against a market day (YYYY-MM-DD).
+// A basket put aside (customer gone to the ATM), kept on this iPad until resumed.
+export interface HeldSale {
+  id: string;
+  lines: Line[];
+  at: string;
+}
+
 export interface Payout {
   id: string;
   day: string;
